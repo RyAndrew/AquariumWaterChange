@@ -1,27 +1,35 @@
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>&#x1F41F; Auto-WC &#x1F30A;</title>
-<h2>&#x1F41F; Auto-WC &#x1F30A;</h2>
 <style type="text/css">
 body,html {
 	font-family: arial;
 	font-size: 30px;
-    padding:4px;
+    padding:0px;
 }
-.button, .temp, .waterlevel {
-	width:90%;
-    max-width: 800px;
-	position: relative;
+.container {
+    text-align:center;
+    padding:3px;
+}
+.label {
+    flex-grow: 1;
+}
+.temp, .button, .waterlevel {
+    display: flex;
+    line-height: 40px;
+    height:40px;
+    vertical-align: middle;
+    max-width: 700px;
+    position: relative;
+    padding:4px;
+    margin:10px 0 0 0;
+    border:2px solid black;
+    text-align: left;
 }
 .waterlevel .state, .temp .state, .button .state {
 	width:80px;
-	line-height: 35px;
 	/*border:2px solid black;*/
 	/*display: inline-block;*/
-	float: right;
-	position:absolute;
-	right:5px;
-	top:5px;
 	text-align: center;
 }
 .waterlevel .state.YES {
@@ -30,33 +38,37 @@ body,html {
 .waterlevel .state.NO {
     content:'\1F573\00FE0E';
 }
+.button .state {
+    border-radius:10px;
+}
 .button .state.ON {
 	background-color:#0f0;
 }
 .button .state.OFF {
 	background-color:#f00;
 }
-.temp, .button, .waterlevel {
-	padding:5px;
-	margin: 5px 0 0 0;
-	border:2px solid black;
-	display: inline-block;
+h2 {
+    margin:0px;
 }
 h3 {
     margin:0px;
     font-style: italic;
 }
 </style>
-<div class="temp" id="temp-tempTank">&#x1F321; Tank <div class="state">- &deg;</div></div><BR>
-<div class="temp" id="temp-tempRodi">&#x1F321; RODI <div class="state">- &deg;</div></div>
+<div class="container">
+<h2>&#x1F41F; Auto-WC &#x1F30A;</h2>
+<div class="temp" id="temp-tempTank"><div class="label">&#x1F321; Tank</div><div class="state">- &deg;</div></div>
+<div class="temp" id="temp-tempRodi"><div class="label">&#x1F321; RODI</div><div class="state">- &deg;</div></div>
+<BR>
 <!--<h3>Water Levels</h3>-->
-<div class="waterlevel" id="waterlevel-2">Tank Level High <div class="state">-</div></div><BR>
-<div class="waterlevel" id="waterlevel-3">Tank Level Low <div class="state">-</div></div><BR>
+<div class="waterlevel" id="waterlevel-2"><div class="label">Tank Level High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-3"><div class="label">Tank Level Low</div><div class="state">-</div></div>
 <!--<h3>Control</h3>-->
 <BR>
-<div class="button" id="button-rodiheatair">&#x2668; RODI Air & Heat <div class="state OFF">OFF</div></div><BR>
-<div class="button" id="button-pump">&#x26FD; Fill Pump <div class="state OFF">OFF</div></div><BR>
-<div class="button" id="button-drain">&#x1F6BD; Drain Valve <div class="state OFF">OFF</div></div><BR>
+<div class="button" id="button-rodiheatair"><div class="label">&#x2668; RODI Air & Heat</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-pump"><div class="label">&#x26FD; Fill Pump</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-drain"><div class="label">&#x1F6BD; Drain Valve</div><div class="state OFF">OFF</div></div>
+</div>
 <script>
 var socket;
 
