@@ -1,6 +1,6 @@
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>&#x1F41F; Auto-WC &#x1F30A;</title>
+<title>&#x1F41F; Water Changer &#x1F4A6;</title>
 <style type="text/css">
 body,html {
     touch-action: pan-x pan-y;
@@ -23,12 +23,11 @@ body,html {
     display: flex;
     line-height: 40px;
     height:40px;
-    vertical-align: middle;
-    max-width: 700px;
-    position: relative;
-    padding:4px;
-    margin:10px 0 0 0;
-    border:2px solid black;
+    margin:0 0 10px 0;
+    padding: 5px 10px;
+    border: 1px solid #e8e8e8;
+    background-color: #f5f5f5;
+    border-radius: 10px;
     text-align: left;
 }
 .waterlevel .state, .temp .state, .button .state {
@@ -38,14 +37,12 @@ body,html {
 	text-align: center;
     margin: 0 0 0 10px;
 }
-.waterlevel .state.YES {
-    content:'\1F4A7\00FE0E';
-}
-.waterlevel .state.NO {
-    content:'\1F573\00FE0E';
-}
 .button .state {
+    user-select: none;
+    padding: 0 2px;
     border-radius:10px;
+    background-color: #f5f5f5;
+    border: 1px solid #8e8e8e;
 }
 .button .state.ON {
 	background-color:#0f0;
@@ -55,26 +52,43 @@ body,html {
 }
 h2 {
     margin:0px;
+    text-align: center;
+    font-size:35px;
 }
 h3 {
     margin:0px;
     font-style: italic;
 }
+.no-italic {
+    font-style: initial;
+    color: initial;
+}
+.head-water-temp {
+    color:#ff7d7d;
+}
+.head-water-levels {
+    color:#80adff;
+}
+.head-control {
+    color:#5bd85b;
+}
 </style>
 <div class="container-outer">
 <div class="container">
-<h2>&#x1F41F; Auto-WC &#x1F30A;</h2>
-<div class="temp" id="temp-tempTank"><div class="label">&#x1F321; Tank</div><div class="state">- &deg;</div></div>
-<div class="temp" id="temp-tempRodi"><div class="label">&#x1F321; RODI</div><div class="state">- &deg;</div></div>
-<BR>
-<!--<h3>Water Levels</h3>-->
-<div class="waterlevel" id="waterlevel-2"><div class="label">Tank Level High</div><div class="state">-</div></div>
-<div class="waterlevel" id="waterlevel-3"><div class="label">Tank Level Low</div><div class="state">-</div></div>
-<!--<h3>Control</h3>-->
-<BR>
-<div class="button" id="button-rodiheatair"><div class="label">&#x2668; RODI Air & Heat</div><div class="state OFF">OFF</div></div>
-<div class="button" id="button-pump"><div class="label">&#x26FD; Fill Pump</div><div class="state OFF">OFF</div></div>
-<div class="button" id="button-drain"><div class="label">&#x1F6BD; Drain Valve</div><div class="state OFF">OFF</div></div>
+<h2>&#x1F41F; Water Changer &#x1F4A6;</h2>
+
+<h3 class="head-water-temp"><span class="no-italic">&#x1F321;&#xFE0F;</span> Temp</h3>
+<div class="temp" id="temp-tempTank"><div class="label">Tank</div><div class="state">- &deg;</div></div>
+<div class="temp" id="temp-tempRodi"><div class="label">RODI</div><div class="state">- &deg;</div></div>
+
+<h3 class="head-water-levels"><span class="no-italic">&#x1F4A7;</span> Water Levels</h3>
+<div class="waterlevel" id="waterlevel-2"><div class="label">Tank High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-3"><div class="label">Tank Low</div><div class="state">-</div></div>
+
+<h3 class="head-control"><span class="no-italic">&#x1F4A1;</span> Control</h3>
+<div class="button" id="button-rodiheatair"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-pump"><div class="label">Fill Pump</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-drain"><div class="label">Drain Valve</div><div class="state OFF">OFF</div></div>
 </div>
 </div>
 <script>
