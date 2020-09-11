@@ -38,7 +38,11 @@ body,html {
     margin: 0 0 0 10px;
 }
 .button .state {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
     user-select: none;
+
     padding: 0 2px;
     border-radius:10px;
     background-color: #f5f5f5;
@@ -85,7 +89,7 @@ h3 {
 <div class="waterlevel" id="waterlevel-2"><div class="label">Tank High</div><div class="state">-</div></div>
 <div class="waterlevel" id="waterlevel-3"><div class="label">Tank Low</div><div class="state">-</div></div>
 
-<h3 class="head-control"><span class="no-italic">&#x1F4A1;</span> Control</h3>
+<h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Control</h3>
 <div class="button" id="button-rodiheatair"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
 <div class="button" id="button-pump"><div class="label">Fill Pump</div><div class="state OFF">OFF</div></div>
 <div class="button" id="button-drain"><div class="label">Drain Valve</div><div class="state OFF">OFF</div></div>
@@ -234,33 +238,27 @@ function toggle(el){
 }
 
 Object.keys(controls).forEach(buttonId => {
-	console.log('#button-'+buttonId);
 	let el = document.querySelector('#button-'+buttonId+' .state');
 	el.controls = buttonId;
-	console.log(el);
 
 	// el.addEventListener('touchstart', function(event){
-	// 	//console.log(arguments);
-	// 	event.target.touchEvent = true;
-	// 	//event.target.touchMoved = 0;
+    //     event.target.touchEvent = true;
+    //     event.returnValue = false;
 	// });
-	//el.addEventListener('touchmove', function(event){
-	//	event.target.touchMoved = 1;
-	//});
-	el.addEventListener('click', function(event){ 
-		//console.log('clicked');
-		// if(event.target.touchEvent){
+	// el.addEventListener('touchmove', function(event){
+    //     event.returnValue = false;
+	// });
+	el.addEventListener('click', function(event){
+		//if(event.target.touchEvent){
 		// 	return;
-		// }
+		//}
 		toggle(event.target);
 	});
-	// el.addEventListener('touchend', function(event){
-	// 	//console.log(arguments);
-    //
-	// 	//if(event.target.touchMoved === 0 ){
-	// 		toggle(event.target);
-	// 	//}
-	// });
+	 // el.addEventListener('touchend', function(event){
+     //     event.target.touchEvent = false;
+     //     toggle(event.target);
+     //     event.returnValue = false;
+	 // });
 });
 
 </script>
