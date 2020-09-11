@@ -1,0 +1,232 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&#x1F41F; Auto-WC &#x1F30A;</title>
+<h2>&#x1F41F; Auto-WC &#x1F30A;</h2>
+<style type="text/css">
+body,html {
+	font-family: arial;
+	font-size: 30px;
+    padding:4px;
+}
+.button, .temp, .waterlevel {
+	width:90%;
+    max-width: 800px;
+	position: relative;
+}
+.waterlevel .state, .temp .state, .button .state {
+	width:80px;
+	line-height: 35px;
+	/*border:2px solid black;*/
+	/*display: inline-block;*/
+	float: right;
+	position:absolute;
+	right:5px;
+	top:5px;
+	text-align: center;
+}
+.waterlevel .state.YES {
+    content:'\1F4A7\00FE0E';
+}
+.waterlevel .state.NO {
+    content:'\1F573\00FE0E';
+}
+.button .state.ON {
+	background-color:#0f0;
+}
+.button .state.OFF {
+	background-color:#f00;
+}
+.temp, .button, .waterlevel {
+	padding:5px;
+	margin: 5px 0 0 0;
+	border:2px solid black;
+	display: inline-block;
+}
+h3 {
+    margin:0px;
+    font-style: italic;
+}
+</style>
+<div class="temp" id="temp-tempTank">&#x1F321; Tank <div class="state">- &deg;</div></div><BR>
+<div class="temp" id="temp-tempRodi">&#x1F321; RODI <div class="state">- &deg;</div></div>
+<!--<h3>Water Levels</h3>-->
+<div class="waterlevel" id="waterlevel-2">Tank Level High <div class="state">-</div></div><BR>
+<div class="waterlevel" id="waterlevel-3">Tank Level Low <div class="state">-</div></div><BR>
+<!--<h3>Control</h3>-->
+<BR>
+<div class="button" id="button-rodiheatair">&#x2668; RODI Air & Heat <div class="state OFF">OFF</div></div><BR>
+<div class="button" id="button-pump">&#x26FD; Fill Pump <div class="state OFF">OFF</div></div><BR>
+<div class="button" id="button-drain">&#x1F6BD; Drain Valve <div class="state OFF">OFF</div></div><BR>
+<script>
+var socket;
+
+let lastState = false;
+let controls = {
+    'pump':{
+        0:'FILL_TANK_PUMP_OFF',
+        1:'FILL_TANK_PUMP_ON'
+    },
+    'drain':{
+        0:'DRAIN_TANK_VALVE_CLOSE',
+        1:'DRAIN_TANK_VALVE_OPEN'
+    },
+    'rodiheatair':{
+        0:'RODI_AIR_HEAT_OFF',
+        1:'RODI_AIR_HEAT_ON'
+    }
+};
+
+// const commands = {
+//     PING
+//
+//     DRAIN_TANK
+//     FILL_TANK
+//
+//     DRAIN_TANK_VALVE_OPEN
+//     DRAIN_TANK_VALVE_CLOSE
+//
+//     FILL_TANK_PUMP_ON
+//     FILL_TANK_PUMP_OFF
+//
+//     RODI_AIR_HEAT_ON
+//     RODI_AIR_HEAT_OFF
+//
+//     RESCAN_TEMP_PROBES
+// };
+
+function connect() {
+    // Create WebSocket connection.
+
+    socket = new WebSocket('ws://' + location.hostname + '/wsapi');
+
+// Connection opened
+    socket.addEventListener('open', function (event) {
+        //socket.send('Hello Server!');
+        console.log('connection open!');
+    });
+
+// Listen for messages
+    socket.addEventListener('message', function (event) {
+        //console.log('Message from server ', event.data);
+        //console.log(event);
+        //console.log(event.data);
+        let msgJson;
+        try{
+            msgJson = JSON.parse(event.data);
+        }catch(error){
+           return;
+        }
+        if(msgJson.hasOwnProperty("state")){
+            updateState(msgJson.state);
+        }
+    });
+
+    socket.onclose = function(e) {
+        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+        setTimeout(function() {
+            connect();
+        }, 1000);
+    };
+
+    socket.onerror = function(err) {
+        console.error('Socket encountered error: ', err.message, 'Closing socket');
+        socket.close();
+    };
+}
+connect();
+
+function updateButtonState(id, state){
+    //console.log('updateButtonState',buttonId,lastState[buttonId],'==',state);
+    if(lastState && lastState[id]==state){
+        return;
+    }
+    let el = document.querySelector('#button-'+id+' .state');
+    let newVal = state==1 ? 'ON' : 'OFF';
+    el.dataValue = state;
+    el.innerHTML = newVal;
+    el.classList.replace(state==1 ? 'OFF': 'ON', newVal );
+}
+
+function updateTempState(id, state){
+    //console.log('updateTempState',tempId,lastState[tempId],'==',state);
+    if(lastState && lastState[id]==state){
+        return;
+    }
+
+    let el = document.querySelector('#temp-'+id+' .state');
+    el.innerHTML = (Math.round(state * 10) / 10)+' &deg;';
+}
+function updateWaterLevelState(id, state){
+    //console.log('updateTempState',tempId,lastState[tempId],'==',state);
+    if(lastState && lastState[id]==state){
+        return;
+    }
+
+    let el = document.querySelector('#waterlevel-'+id+' .state');
+    //el.classList.replace(state==1 ? 'YES' : 'NO', state==1 ? 'NO': 'YES' );
+    el.innerHTML = state==1 ? '&#x1F4A7;' : '&#x1F573;';
+}
+function updateState(state){
+    //console.log('updateState',state);
+
+    updateTempState('tempTank', state.tempTank);
+    updateTempState('tempRodi', state.tempRodi);
+
+    updateButtonState('pump',state.pump);
+    updateButtonState('drain',state.drain);
+    updateButtonState('rodiheatair',state.rodiheatair);
+
+    updateWaterLevelState('3',state.level3);
+    updateWaterLevelState('2',state.leve12);
+    lastState = state;
+}
+
+function toggle(el){
+	if(!el.hasOwnProperty('dataValue')){
+	    return;
+    }
+
+    let newVal = el.dataValue == 1 ? 0 : 1;
+
+    updateButtonState(el.controls,newVal);
+    lastState[el.controls] = newVal;
+
+    socket.send(JSON.stringify({
+        action:'cmd',
+        value:controls[el.controls][newVal],
+        state:el.controls,
+        stateValue:newVal
+    }));
+}
+
+Object.keys(controls).forEach(buttonId => {
+	console.log('#button-'+buttonId);
+	let el = document.querySelector('#button-'+buttonId+' .state');
+	el.controls = buttonId;
+	console.log(el);
+
+	// el.addEventListener('touchstart', function(event){
+	// 	//console.log(arguments);
+	// 	event.target.touchEvent = true;
+	// 	//event.target.touchMoved = 0;
+	// });
+	//el.addEventListener('touchmove', function(event){
+	//	event.target.touchMoved = 1;
+	//});
+	el.addEventListener('click', function(event){ 
+		//console.log('clicked');
+		// if(event.target.touchEvent){
+		// 	return;
+		// }
+		toggle(event.target);
+	});
+	// el.addEventListener('touchend', function(event){
+	// 	//console.log(arguments);
+    //
+	// 	//if(event.target.touchMoved === 0 ){
+	// 		toggle(event.target);
+	// 	//}
+	// });
+});
+
+</script>
