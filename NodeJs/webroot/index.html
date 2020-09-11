@@ -1,14 +1,19 @@
 <html>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>&#x1F41F; Auto-WC &#x1F30A;</title>
 <style type="text/css">
 body,html {
+    touch-action: pan-x pan-y;
 	font-family: arial;
 	font-size: 30px;
     padding:0px;
+    margin:0px;
+}
+.container-outer {
+    display: flex;
+    justify-content: center;
 }
 .container {
-    text-align:center;
     padding:3px;
 }
 .label {
@@ -31,6 +36,7 @@ body,html {
 	/*border:2px solid black;*/
 	/*display: inline-block;*/
 	text-align: center;
+    margin: 0 0 0 10px;
 }
 .waterlevel .state.YES {
     content:'\1F4A7\00FE0E';
@@ -55,6 +61,7 @@ h3 {
     font-style: italic;
 }
 </style>
+<div class="container-outer">
 <div class="container">
 <h2>&#x1F41F; Auto-WC &#x1F30A;</h2>
 <div class="temp" id="temp-tempTank"><div class="label">&#x1F321; Tank</div><div class="state">- &deg;</div></div>
@@ -68,6 +75,7 @@ h3 {
 <div class="button" id="button-rodiheatair"><div class="label">&#x2668; RODI Air & Heat</div><div class="state OFF">OFF</div></div>
 <div class="button" id="button-pump"><div class="label">&#x26FD; Fill Pump</div><div class="state OFF">OFF</div></div>
 <div class="button" id="button-drain"><div class="label">&#x1F6BD; Drain Valve</div><div class="state OFF">OFF</div></div>
+</div>
 </div>
 <script>
 var socket;
