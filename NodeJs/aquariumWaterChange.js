@@ -45,7 +45,7 @@ function init(){
 }
 
 function initSerial() {
-}
+
 	arduinoSerial = new SerialPort('/dev/ttyAMA0', {
 		baudRate: 115200
 	}
@@ -56,19 +56,25 @@ function initSerial() {
 	})
 
 	const parser = arduinoSerial.pipe(new Readline({ delimiter: '\r\n' }))
-	parser.on('data', handleSerial)
+	parser.on('data', handleSerialMessage)
 
+}
 
-//}
-
-function handleSerial(data){
+function handleSerialMessage(data){
 	let keyValueArr = data.split(",");
+	let stateChangeFound = false;
 	keyValueArr.forEach(entry => {
 		let key, value;
 		[key,value] = entry.split("=");
 		//console.log(key,'=',value);
+		if(arduinoState[key] !== value ){
+			stateChangeFound = true;
+		}
 		arduinoState[key] = value;
 	});
+	if(stateChangeFound){
+		broadcastData(JSON.stringify({state:arduinoState}))
+	}
 }
 
 // maps file extention to MIME types
@@ -88,6 +94,18 @@ const mimeType = {
 	'.eot': 'appliaction/vnd.ms-fontobject',
 	'.ttf': 'aplication/font-sfnt'
 };
+
+
+function initHttpServer(){
+
+	httpServer.listen(config.httpPort).on('error',function(){
+		console.error(`Fatal Error! Failed to listen on port ${config.httpPort}. Is something else using it?`);
+		process.exit(1);
+	});
+
+	console.log('http listening on port '+config.httpPort);
+
+}
 
 const httpServer = http.createServer(function (req, res) {
 	console.log(`${req.method} ${req.url}`);
@@ -176,30 +194,26 @@ webSocketServer.on('connection', function connection(ws, req) {
 	 	handleWebsocketMessage(ws, message);
 	});
 
-	let interval = setInterval(function(){
-		ws.send(JSON.stringify({state:arduinoState}));
-	}, 1000);
+	// let interval = setInterval(function(){
+	// 	ws.send(JSON.stringify({state:arduinoState}));
+	// }, 1000);
 
 	ws.on('close', function clear() {
 		console.log('connection closed for ' + ip);
-		clearInterval(interval);
+		//clearInterval(interval);
 	});
 
 	//ws.send(JSON.stringify({connected:true}));
 	ws.send(JSON.stringify({state:arduinoState}));
 });
 
-function initHttpServer(){
-
-	httpServer.listen(config.httpPort).on('error',function(){
-		console.error(`Fatal Error! Failed to listen on port ${config.httpPort}. Is something else using it?`);
-		process.exit(1);
+function broadcastData(data) {
+	webSocketServer.clients.forEach(clientSocket => {
+		if (clientSocket.readyState === WebSocket.OPEN) {
+			clientSocket.send(data);
+		}
 	});
-
-	console.log('http listening on port '+config.httpPort)
-
 }
-
 
 function handleWebsocketMessage(wsp, message) {
 	var ws = wsp || false;
@@ -239,6 +253,8 @@ function handleWebsocketMessage(wsp, message) {
 			}
 
 			arduinoState[messageJson.state] = messageJson.stateValue;
+
+			broadcastData(JSON.stringify({state:arduinoState}))
 
 			console.log('sending arduino command '+messageJson.value);
 			console.log(arduinoCommands[messageJson.value]);
