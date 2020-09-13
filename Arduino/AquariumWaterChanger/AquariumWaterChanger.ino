@@ -34,13 +34,13 @@ float tempProbeTankReading = 0;
 
 char serialCommand = 0;
 
-int levelSensor1State;
+int levelSensor1State = 0;
 int levelSensor1 = 15;
 
-int levelSensor2State;
+int levelSensor2State = 0;
 int levelSensor2 = 14;
 
-int levelSensor3State;
+int levelSensor3State = 0;
 int levelSensor3 = 16;
 
 int tankDrainSolenoidValve = 21;
@@ -139,7 +139,7 @@ void handleSerialCommand() {
 }
 void readLevelSensors() {
 
-  levelSensor1State = digitalRead(levelSensor1);
+  //levelSensor1State = digitalRead(levelSensor1);
   levelSensor2State = digitalRead(levelSensor2);
   levelSensor3State = digitalRead(levelSensor3);
 
@@ -252,8 +252,8 @@ void outputState(){
   }
   lastOutputStateTime = millis();
 
-  Serial.print("lv1=");
-  Serial1.print("lv1=");
+  Serial.print("wlv1=");
+  Serial1.print("wlv1=");
   if (levelSensor1State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -262,8 +262,8 @@ void outputState(){
     Serial1.print("1");
   }
 
-  Serial.print(",lv2=");
-  Serial1.print(",lv2=");
+  Serial.print(",wlv2=");
+  Serial1.print(",wlv2=");
   if (levelSensor2State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -272,8 +272,8 @@ void outputState(){
     Serial1.print("1");
   }
 
-  Serial.print(",lv3=");
-  Serial1.print(",lv3=");
+  Serial.print(",wlv3=");
+  Serial1.print(",wlv3=");
   if (levelSensor3State == 1) {
     Serial.print("0");
     Serial1.print("0");
