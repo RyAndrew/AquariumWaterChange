@@ -14,7 +14,10 @@ uint8_t tempProbeRodiAddr[] ={ 0x28,0xFF,0x3D,0x20,0x71,0x17,0x03,0x74 };
 uint8_t tempProbeTankAddr[] ={ 0x28,0xFF,0x1A,0xE4,0x70,0x17,0x03,0x41 };
 
 float tempProbeRodiReading = 0;
+float tempProbeRodiReadingLast = 0;
+
 float tempProbeTankReading = 0;
+float tempProbeTankReadingLast = 0;
 
 #define COMMAND_PING 'a'
 //opens solenoid valve until tank low sensor triggers
@@ -34,28 +37,39 @@ float tempProbeTankReading = 0;
 
 char serialCommand = 0;
 
-int levelSensor1State = 0;
+uint8_t levelSensor1StateLast = 0;
+uint8_t levelSensor1State = 0;
 int levelSensor1 = 15;
 
-int levelSensor2State = 0;
+uint8_t levelSensor2StateLast = 0;
+uint8_t levelSensor2State = 0;
 int levelSensor2 = 14;
 
-int levelSensor3State = 0;
+uint8_t levelSensor3StateLast = 0;
+uint8_t levelSensor3State = 0;
 int levelSensor3 = 16;
+
+uint8_t levelSensor4StateLast = 0;
+uint8_t levelSensor4State = 0;
+int levelSensor4 = 18;
 
 int tankDrainSolenoidValve = 21;
 int tankFillPump = 9;
 int rodiAirHeat = 8;
 
-uint8_t tankDrainSolenoidValveState = 0;
-uint8_t tankFillPumpState = 0;
-uint8_t rodiAirHeatState = 0;
+byte tankDrainSolenoidValveState = 0;
+byte tankFillPumpState = 0;
+byte rodiAirHeatState = 0;
 
-unsigned long lastReadTempsInterval = 2000;
+unsigned long lastReadTempsInterval = 1000;
 unsigned long lastReadTempsTime = 0;
 
-unsigned long lastOutputStateInterval = 500;
-unsigned long lastOutputStateTime = 0;
+unsigned long minOutputStateInterval = 100;
+
+unsigned long lastFullOutputStateInterval = 2000;
+unsigned long lastFullOutputStateTime = 0;
+
+bool triggerSerialOutput = true;
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -67,6 +81,7 @@ void setup() {
   pinMode(levelSensor1, INPUT);
   pinMode(levelSensor2, INPUT);
   pinMode(levelSensor3, INPUT);
+  pinMode(levelSensor4, INPUT);
 
   pinMode(tankDrainSolenoidValve, OUTPUT);
   digitalWrite(tankDrainSolenoidValve, LOW);
@@ -139,9 +154,29 @@ void handleSerialCommand() {
 }
 void readLevelSensors() {
 
-  //levelSensor1State = digitalRead(levelSensor1);
+  levelSensor1State = digitalRead(levelSensor1);
+  if(levelSensor1State != levelSensor1StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor1StateLast = levelSensor1State;
+  
   levelSensor2State = digitalRead(levelSensor2);
+  if(levelSensor2State != levelSensor2StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor2StateLast = levelSensor2State;
+  
   levelSensor3State = digitalRead(levelSensor3);
+  if(levelSensor3State != levelSensor3StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor3StateLast = levelSensor3State;
+  
+  levelSensor4State = digitalRead(levelSensor4);
+  if(levelSensor4State != levelSensor4StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor4StateLast = levelSensor4State;
 
 }
 
@@ -200,6 +235,11 @@ void readTemps() {
     Serial.println("Error reading temp from Rodi");
     tempProbeRodiReading = 0;
   }
+  if(tempProbeRodiReadingLast != tempProbeRodiReading){
+    triggerSerialOutput = true;
+  }
+  tempProbeRodiReadingLast = tempProbeRodiReading;
+
 
   //read tank
   tempProbeTankReading = dallas.getTempF(tempProbeTankAddr);
@@ -208,7 +248,10 @@ void readTemps() {
     Serial.println("Error reading temp from Tank");
     tempProbeTankReading = 0;
   }
-
+  if(tempProbeTankReadingLast != tempProbeTankReading){
+    triggerSerialOutput = true;
+  }
+  tempProbeTankReadingLast = tempProbeTankReading;
   
   //  float tempC = dallas.getTempCByIndex(0);
   //  if(tempC != DEVICE_DISCONNECTED_C){
@@ -247,10 +290,13 @@ void readTemps() {
 
 }
 void outputState(){
-  if (millis() - lastOutputStateTime < lastOutputStateInterval) {
-    return;
+  unsigned long lastSerial = millis() - lastFullOutputStateTime;
+  
+  if( (triggerSerialOutput == 0 || lastSerial < minOutputStateInterval) && lastSerial < lastFullOutputStateInterval ){
+      return;
   }
-  lastOutputStateTime = millis();
+  triggerSerialOutput = 0;
+  lastFullOutputStateTime = millis();
 
   Serial.print("wlv1=");
   Serial1.print("wlv1=");
@@ -282,6 +328,16 @@ void outputState(){
     Serial1.print("1");
   }
 
+  Serial.print(",wlv4=");
+  Serial1.print(",wlv4=");
+  if (levelSensor4State == 1) {
+    Serial.print("0");
+    Serial1.print("0");
+  } else {
+    Serial.print("1");
+    Serial1.print("1");
+  }
+  
   Serial.print(",tempRodi=");
   Serial1.print(",tempRodi=");
   Serial.print(tempProbeRodiReading);
@@ -312,9 +368,9 @@ void outputState(){
   Serial1.println("");
 
 }
-void readSerialCommand() {
+void readSerialCommand(){
 
-  if (Serial1.available() > 0) {
+  if (Serial1.available() > 0){
     String cmdRecieved;
     int cmdRecievedLen;
 
