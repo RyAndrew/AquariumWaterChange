@@ -1,0 +1,23 @@
+# copy into /etc/systemd/system/nodeaquarium.service
+
+[Unit]
+Description=Node Aquarium Water Changer
+Documentation=https://github.com/RyAndrew/AquariumWaterChange
+After=multi-user.target
+
+[Service]
+Type=simple
+
+User=pi
+Group=1000
+
+WorkingDirectory=/home/pi/aquariumWaterChange
+ExecStart=/usr/local/bin/node /home/pi/aquariumWaterChange/aquariumWaterChange.js
+ExecReload=
+ExecStop=
+
+Restart=always
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target
