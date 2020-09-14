@@ -1,4 +1,4 @@
-<html>
+<html lang="en">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>&#x1F41F; Water Changer &#x1F4A6;</title>
 <style type="text/css">
@@ -47,6 +47,8 @@ body,html {
     border-radius:10px;
     background-color: #f5f5f5;
     border: 1px solid #8e8e8e;
+
+    cursor: pointer;
 }
 .button .state.ON {
 	background-color:#0f0;
@@ -86,8 +88,10 @@ h3 {
 <div class="temp" id="temp-tempRodi"><div class="label">RODI</div><div class="state">- &deg;</div></div>
 
 <h3 class="head-water-levels"><span class="no-italic">&#x1F4A7;</span> Water Levels</h3>
-<div class="waterlevel" id="waterlevel-2"><div class="label">Tank High</div><div class="state">-</div></div>
-<div class="waterlevel" id="waterlevel-3"><div class="label">Tank Low</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-1"><div class="label">Tank High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-2"><div class="label">Tank Low</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-3"><div class="label">RODI High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-4"><div class="label">RODI Low</div><div class="state">-</div></div>
 
 <h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Control</h3>
 <div class="button" id="button-rodiheatair"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
@@ -214,8 +218,10 @@ function updateState(state){
     updateButtonState('drain',state.drain);
     updateButtonState('rodiheatair',state.rodiheatair);
 
-    updateWaterLevelState('3',state.wlv3);
+    updateWaterLevelState('1',state.wlv1);
     updateWaterLevelState('2',state.wlv2);
+    updateWaterLevelState('3',state.wlv3);
+    updateWaterLevelState('4',state.wlv4);
     lastState = state;
 }
 
