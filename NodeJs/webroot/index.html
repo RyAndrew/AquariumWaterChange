@@ -84,19 +84,20 @@ h3 {
 <h2>&#x1F41F; Water Changer &#x1F4A6;</h2>
 
 <h3 class="head-water-temp"><span class="no-italic">&#x1F321;&#xFE0F;</span> Temp</h3>
-<div class="temp" id="temp-tempTank"><div class="label">Tank</div><div class="state">- &deg;</div></div>
-<div class="temp" id="temp-tempRodi"><div class="label">RODI</div><div class="state">- &deg;</div></div>
+<div class="temp" id="temp-t2"><div class="label">Tank</div><div class="state">- &deg;</div></div>
+<div class="temp" id="temp-t1"><div class="label">RODI</div><div class="state">- &deg;</div></div>
 
 <h3 class="head-water-levels"><span class="no-italic">&#x1F4A7;</span> Water Levels</h3>
-<div class="waterlevel" id="waterlevel-1"><div class="label">Tank High</div><div class="state">-</div></div>
-<div class="waterlevel" id="waterlevel-2"><div class="label">Tank Low</div><div class="state">-</div></div>
-<div class="waterlevel" id="waterlevel-3"><div class="label">RODI High</div><div class="state">-</div></div>
-<div class="waterlevel" id="waterlevel-4"><div class="label">RODI Low</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-w1"><div class="label">Tank High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-w2"><div class="label">Tank Low</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-w3"><div class="label">RODI High</div><div class="state">-</div></div>
+<div class="waterlevel" id="waterlevel-w4"><div class="label">RODI Low</div><div class="state">-</div></div>
 
 <h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Control</h3>
-<div class="button" id="button-rodiheatair"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
-<div class="button" id="button-pump"><div class="label">Fill Pump</div><div class="state OFF">OFF</div></div>
-<div class="button" id="button-drain"><div class="label">Drain Valve</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-r3"><div class="label">Tank Filter & Circ</div><div class="state ON">ON</div></div>
+<div class="button" id="button-r2"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-r1"><div class="label">Fill Pump</div><div class="state OFF">OFF</div></div>
+<div class="button" id="button-m1"><div class="label">Drain Valve</div><div class="state OFF">OFF</div></div>
 </div>
 </div>
 <script>
@@ -104,15 +105,19 @@ var socket;
 
 let lastState = false;
 let controls = {
-    'pump':{
+    'r3':{
+        0:'TANK_FILTER_OFF',
+        1:'TANK_FILTER_ON'
+    },
+    'r1':{
         0:'FILL_TANK_PUMP_OFF',
         1:'FILL_TANK_PUMP_ON'
     },
-    'drain':{
+    'm1':{
         0:'DRAIN_TANK_VALVE_CLOSE',
         1:'DRAIN_TANK_VALVE_OPEN'
     },
-    'rodiheatair':{
+    'r2':{
         0:'RODI_AIR_HEAT_OFF',
         1:'RODI_AIR_HEAT_ON'
     }
@@ -211,17 +216,17 @@ function updateWaterLevelState(id, state){
 function updateState(state){
     //console.log('updateState',state);
 
-    updateTempState('tempTank', state.tempTank);
-    updateTempState('tempRodi', state.tempRodi);
+    updateTempState('t2', state.t2);
+    updateTempState('t1', state.t1);
 
-    updateButtonState('pump',state.pump);
-    updateButtonState('drain',state.drain);
-    updateButtonState('rodiheatair',state.rodiheatair);
+    updateButtonState('r1',state.r1);
+    updateButtonState('r2',state.r2);
+    updateButtonState('m1',state.m1);
 
-    updateWaterLevelState('1',state.wlv1);
-    updateWaterLevelState('2',state.wlv2);
-    updateWaterLevelState('3',state.wlv3);
-    updateWaterLevelState('4',state.wlv4);
+    updateWaterLevelState('w1',state.w1);
+    updateWaterLevelState('w2',state.w2);
+    updateWaterLevelState('w3',state.w3);
+    updateWaterLevelState('w4',state.w4);
     lastState = state;
 }
 
@@ -247,6 +252,14 @@ Object.keys(controls).forEach(buttonId => {
 	let el = document.querySelector('#button-'+buttonId+' .state');
 	el.controls = buttonId;
 
+    el.addEventListener('click', function(event){
+        //if(event.target.touchEvent){
+        // 	return;
+        //}
+        toggle(event.target);
+    });
+
+    //junk for apple to maybe disable touch. css worked instead
 	// el.addEventListener('touchstart', function(event){
     //     event.target.touchEvent = true;
     //     event.returnValue = false;
@@ -254,12 +267,6 @@ Object.keys(controls).forEach(buttonId => {
 	// el.addEventListener('touchmove', function(event){
     //     event.returnValue = false;
 	// });
-	el.addEventListener('click', function(event){
-		//if(event.target.touchEvent){
-		// 	return;
-		//}
-		toggle(event.target);
-	});
 	 // el.addEventListener('touchend', function(event){
      //     event.target.touchEvent = false;
      //     toggle(event.target);

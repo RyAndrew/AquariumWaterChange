@@ -298,8 +298,8 @@ void outputState(){
   triggerSerialOutput = 0;
   lastFullOutputStateTime = millis();
 
-  Serial.print("wlv1=");
-  Serial1.print("wlv1=");
+  Serial.print("w1=");
+  Serial1.print("w1=");
   if (levelSensor1State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -308,8 +308,8 @@ void outputState(){
     Serial1.print("1");
   }
 
-  Serial.print(",wlv2=");
-  Serial1.print(",wlv2=");
+  Serial.print(",w2=");
+  Serial1.print(",w2=");
   if (levelSensor2State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -318,8 +318,8 @@ void outputState(){
     Serial1.print("1");
   }
 
-  Serial.print(",wlv3=");
-  Serial1.print(",wlv3=");
+  Serial.print(",w3=");
+  Serial1.print(",w3=");
   if (levelSensor3State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -328,8 +328,8 @@ void outputState(){
     Serial1.print("1");
   }
 
-  Serial.print(",wlv4=");
-  Serial1.print(",wlv4=");
+  Serial.print(",w4=");
+  Serial1.print(",w4=");
   if (levelSensor4State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -338,29 +338,29 @@ void outputState(){
     Serial1.print("1");
   }
   
-  Serial.print(",tempRodi=");
-  Serial1.print(",tempRodi=");
+  Serial.print(",t1=");
+  Serial1.print(",t1=");
   Serial.print(tempProbeRodiReading);
   Serial1.print(tempProbeRodiReading);
   
-  Serial.print(",tempTank=");
-  Serial1.print(",tempTank=");
+  Serial.print(",t2=");
+  Serial1.print(",t2=");
   Serial.print(tempProbeTankReading);
   Serial1.print(tempProbeTankReading);
 
 
-  Serial.print(",drain=");
-  Serial1.print(",drain=");
+  Serial.print(",m1=");
+  Serial1.print(",m1=");
   Serial.print(tankDrainSolenoidValveState);
   Serial1.print(tankDrainSolenoidValveState);
 
-  Serial.print(",pump=");
-  Serial1.print(",pump=");
+  Serial.print(",r1=");
+  Serial1.print(",r1=");
   Serial.print(tankFillPumpState);
   Serial1.print(tankFillPumpState);
   
-  Serial.print(",rodiheatair=");
-  Serial1.print(",rodiheatair=");
+  Serial.print(",r2=");
+  Serial1.print(",r2=");
   Serial.print(rodiAirHeatState);
   Serial1.print(rodiAirHeatState);
   
