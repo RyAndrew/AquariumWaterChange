@@ -29,6 +29,19 @@ const arduinoCommands = {
 	RESCAN_TEMP_PROBES: 'j',
 };
 
+const validStates = [
+	'm1',
+	'r1',
+	'r2',
+	't1',
+	't2',
+	'w1',
+	'w2',
+	'w3',
+	'w4',
+	'w1'
+];
+
 
 var arduinoSerial;
 var arduinoState = {};
@@ -66,6 +79,10 @@ function handleSerialMessage(data){
 	keyValueArr.forEach(entry => {
 		let key, value;
 		[key,value] = entry.split("=");
+
+		if(!validStates.includes(key)){
+			return;
+		}
 		//console.log(key,'=',value);
 		if(arduinoState[key] !== value ){
 			stateChangeFound = true;
@@ -112,22 +129,6 @@ const httpServer = http.createServer(function (req, res) {
 
 	let parsedUrl = url.parse(req.url);
 	//console.log(`parsedUrl.pathname = ${parsedUrl.pathname}`);
-
-	if(parsedUrl.pathname.indexOf('/sendAudio') != -1){
-		res.connection.setTimeout(0);
-		//log('Incoming Audio client connect from ' + req.socket.remoteAddress + ':' + req.socket.remotePort);
-		req.on('data', function(data){
-			//broadcastAudioData(data);
-			//if(internetVideoStarted){
-			//	internetVideoSendAudioData(data);
-			//}
-		});
-		req.on('end',function(){
-			console.log('Incoming Audio client closed from '+ req.socket.remoteAddress + ':' + req.socket.remotePort);
-		});
-		return;
-	}
-
 
 	// extract URL path
 	// Avoid https://en.wikipedia.org/wiki/Directory_traversal_attack
@@ -190,12 +191,12 @@ webSocketServer.on('connection', function connection(ws, req) {
 	console.log('connection from ' + ip);
 
 	 ws.on('message', function(message){
-	 	console.log('message recieved',message);
-	 	handleWebsocketMessage(ws, message);
+		console.log('message recieved',message);
+		handleWebsocketMessage(ws, message);
 	});
 
 	// let interval = setInterval(function(){
-	// 	ws.send(JSON.stringify({state:arduinoState}));
+	//  ws.send(JSON.stringify({state:arduinoState}));
 	// }, 1000);
 
 	ws.on('close', function clear() {
@@ -275,7 +276,7 @@ function handleWebsocketMessage(wsp, message) {
 // }
 //
 // function intervalFunc() {
-// 	let rand = getRandomInt(9)+'';
+//  let rand = getRandomInt(9)+'';
 //   arduinoSerial.write(rand);
 //   console.log(rand);
 // }
