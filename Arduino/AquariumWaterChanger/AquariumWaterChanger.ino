@@ -39,15 +39,15 @@ char serialCommand = 0;
 
 uint8_t levelSensor1StateLast = 0;
 uint8_t levelSensor1State = 0;
-int levelSensor1 = 15;
+int levelSensor1 = 14;
 
 uint8_t levelSensor2StateLast = 0;
 uint8_t levelSensor2State = 0;
-int levelSensor2 = 14;
+int levelSensor2 = 16;
 
 uint8_t levelSensor3StateLast = 0;
 uint8_t levelSensor3State = 0;
-int levelSensor3 = 16;
+int levelSensor3 = 15;
 
 uint8_t levelSensor4StateLast = 0;
 uint8_t levelSensor4State = 0;
