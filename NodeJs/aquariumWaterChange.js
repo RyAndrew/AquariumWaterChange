@@ -46,6 +46,10 @@ const validStates = [
 var arduinoSerial;
 var arduinoState = {};
 
+validStates.forEach(v => {
+	arduinoState[v] = '-1'
+});
+
 var config = {
 	httpPort:80 //https://stackoverflow.com/a/23281401
 };
