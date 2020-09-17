@@ -104,22 +104,34 @@ h3 {
 var socket;
 
 let lastState = false;
-let controls = {
-    'r3':{
-        0:'TANK_FILTER_OFF',
-        1:'TANK_FILTER_ON'
-    },
+var controls = {
     'r1':{
-        0:'FILL_TANK_PUMP_OFF',
-        1:'FILL_TANK_PUMP_ON'
-    },
-    'm1':{
-        0:'DRAIN_TANK_VALVE_CLOSE',
-        1:'DRAIN_TANK_VALVE_OPEN'
+        type:'button',
+        states:{
+            0:'FILL_TANK_PUMP_OFF',
+            1:'FILL_TANK_PUMP_ON'
+        }
     },
     'r2':{
-        0:'RODI_AIR_HEAT_OFF',
-        1:'RODI_AIR_HEAT_ON'
+        type:'button',
+        states:{
+            0:'RODI_AIR_HEAT_OFF',
+            1:'RODI_AIR_HEAT_ON'
+        }
+    },
+    'r3':{
+        type:'button',
+        states:{
+            0:'TANK_FILTER_OFF',
+            1:'TANK_FILTER_ON'
+        }
+    },
+    'm1':{
+        type:'button',
+        states:{
+            0:'DRAIN_TANK_VALVE_CLOSE',
+            1:'DRAIN_TANK_VALVE_OPEN'
+        }
     }
 };
 
@@ -148,8 +160,7 @@ function connect() {
 
 // Connection opened
     socket.addEventListener('open', function (event) {
-        //socket.send('Hello Server!');
-        console.log('connection open!');
+        //console.log('connection open!');
     });
 
 // Listen for messages
@@ -219,15 +230,30 @@ function updateState(state){
     updateTempState('t2', state.t2);
     updateTempState('t1', state.t1);
 
-    updateButtonState('r1',state.r1);
-    updateButtonState('r2',state.r2);
-    updateButtonState('m1',state.m1);
+    
+    // updateButtonState('r1',state.r1);
+    // updateButtonState('r2',state.r2);
+    // updateButtonState('r3',state.r3);
+    // updateButtonState('m1',state.m1);
 
     updateWaterLevelState('w1',state.w1);
     updateWaterLevelState('w2',state.w2);
     updateWaterLevelState('w3',state.w3);
     updateWaterLevelState('w4',state.w4);
+
+    forEachControl(function(control){
+        switch(controls[control].type){
+            case 'button':
+                updateButtonState(control,state[control]);
+            break;
+        }
+    });
+
     lastState = state;
+}
+
+function forEachControl(fn){
+    Object.keys(controls).forEach(control => {fn(control)});
 }
 
 function toggle(el){
@@ -242,15 +268,16 @@ function toggle(el){
 
     socket.send(JSON.stringify({
         action:'cmd',
-        value:controls[el.controls][newVal],
+        value:controls[el.controls].states[newVal],
         state:el.controls,
         stateValue:newVal
     }));
 }
 
-Object.keys(controls).forEach(buttonId => {
-	let el = document.querySelector('#button-'+buttonId+' .state');
-	el.controls = buttonId;
+
+forEachControl(function(control){
+	let el = document.querySelector('#button-'+control+' .state');
+	el.controls = control;
 
     el.addEventListener('click', function(event){
         //if(event.target.touchEvent){
