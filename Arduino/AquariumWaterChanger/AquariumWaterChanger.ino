@@ -33,7 +33,10 @@ float tempProbeTankReadingLast = 0;
 #define COMMAND_RODI_AIR_HEAT_ON 'h'
 #define COMMAND_RODI_AIR_HEAT_OFF 'i'
 
-#define COMMAND_RESCAN_TEMP_PROBES 'j'
+#define COMMAND_TANK_FILTER_ON 'j'
+#define COMMAND_TANK_FILTER_OFF 'k'
+
+#define COMMAND_RESCAN_TEMP_PROBES 'z'
 
 char serialCommand = 0;
 
@@ -53,11 +56,11 @@ uint8_t levelSensor4StateLast = 0;
 uint8_t levelSensor4State = 0;
 int levelSensor4 = 18;
 
-int tankDrainSolenoidValve = 21;
-int tankFillPump = 9;
-int rodiAirHeat = 8;
+int pinTankFilter = 19;
+int pinTankFillPump = 9;
+int pinRodiAirHeat = 8;
 
-byte tankDrainSolenoidValveState = 0;
+byte tankFilterState = 1;
 byte tankFillPumpState = 0;
 byte rodiAirHeatState = 0;
 
@@ -68,6 +71,14 @@ unsigned long minOutputStateInterval = 100;
 
 unsigned long lastFullOutputStateInterval = 2000;
 unsigned long lastFullOutputStateTime = 0;
+
+//digital pin
+int pinTankDrainSolenoidValveBkp = 21;
+int pinTankDrainSolenoidValve = 6;
+byte tankDrainSolenoidValveState = 0;
+unsigned long tankDrainSolenoidValveStateInterval = 2000;
+unsigned long tankDrainSolenoidValveStateOpenTime = 0;
+byte tankDrainSolenoidValveStatePwm = 0;
 
 bool triggerSerialOutput = true;
 
@@ -83,14 +94,20 @@ void setup() {
   pinMode(levelSensor3, INPUT);
   pinMode(levelSensor4, INPUT);
 
-  pinMode(tankDrainSolenoidValve, OUTPUT);
-  digitalWrite(tankDrainSolenoidValve, LOW);
+  pinMode(pinTankDrainSolenoidValve, OUTPUT);
+  digitalWrite(pinTankDrainSolenoidValve, LOW);
+  pinMode(pinTankDrainSolenoidValveBkp, OUTPUT);
+  digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
 
-  pinMode(tankFillPump, OUTPUT);
-  digitalWrite(tankFillPump, HIGH);
+  //relay configurable high or low triggered, default high triggered
+  pinMode(pinTankFilter, OUTPUT);
+  digitalWrite(pinTankFilter, LOW);
 
-  pinMode(rodiAirHeat, OUTPUT);
-  digitalWrite(rodiAirHeat, HIGH);
+  pinMode(pinTankFillPump, OUTPUT);
+  digitalWrite(pinTankFillPump, HIGH);
+
+  pinMode(pinRodiAirHeat, OUTPUT);
+  digitalWrite(pinRodiAirHeat, HIGH);
 
   //  serialCommand = COMMAND_DRAIN_TANK_VALVE_CLOSE;
   //  handleSerialCommand();
@@ -109,11 +126,36 @@ void loop() {
 
   readSerialCommand();
 
+  handleSolenoidState();
+
   readLevelSensors();
 
   outputState();
 
 }
+
+void handleSolenoidState() {
+
+  if(tankDrainSolenoidValveState == 1){
+      if(tankDrainSolenoidValveStatePwm == 0){
+        if(tankDrainSolenoidValveStateOpenTime == 0){
+          tankDrainSolenoidValveStateOpenTime = millis();
+        }else{
+            if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
+              tankDrainSolenoidValveStateOpenTime = 0;
+              tankDrainSolenoidValveStatePwm = 1;
+              analogWrite(pinTankDrainSolenoidValve, 77); // 30%
+              
+              //Serial.println("solenoid at 30%");
+            }else{
+              analogWrite(pinTankDrainSolenoidValve, 255);
+              //Serial.println("solenoid at 100%");
+            }
+        }
+      }
+  }
+}
+
 void handleSerialCommand() {
 
   switch (serialCommand) {
@@ -121,28 +163,41 @@ void handleSerialCommand() {
       Serial.println("pong");
       break;
     case COMMAND_DRAIN_TANK_VALVE_OPEN:
-      digitalWrite(tankDrainSolenoidValve, HIGH);
+      digitalWrite(pinTankDrainSolenoidValveBkp, HIGH);
+      
       tankDrainSolenoidValveState = 1;
+      tankDrainSolenoidValveStatePwm = 0;
       break;
     case COMMAND_DRAIN_TANK_VALVE_CLOSE:
-      digitalWrite(tankDrainSolenoidValve, LOW);
+      digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
+      
       tankDrainSolenoidValveState = 0;
+      tankDrainSolenoidValveStatePwm = 0;
+      analogWrite(pinTankDrainSolenoidValve, 0);
       break;
     case COMMAND_FILL_TANK_PUMP_ON:
-      digitalWrite(tankFillPump, LOW);
+      digitalWrite(pinTankFillPump, LOW);
       tankFillPumpState = 1;
       break;
     case COMMAND_FILL_TANK_PUMP_OFF:
-      digitalWrite(tankFillPump, HIGH);
+      digitalWrite(pinTankFillPump, HIGH);
       tankFillPumpState = 0;
       break;
     case COMMAND_RODI_AIR_HEAT_ON:
-      digitalWrite(rodiAirHeat, LOW);
+      digitalWrite(pinRodiAirHeat, LOW);
       rodiAirHeatState = 1;
       break;
     case COMMAND_RODI_AIR_HEAT_OFF:
-      digitalWrite(rodiAirHeat, HIGH);
+      digitalWrite(pinRodiAirHeat, HIGH);
       rodiAirHeatState = 0;
+      break;
+    case COMMAND_TANK_FILTER_ON:
+      digitalWrite(pinTankFilter, LOW);
+      tankFilterState = 1;
+      break;
+    case COMMAND_TANK_FILTER_OFF:
+      digitalWrite(pinTankFilter, HIGH);
+      tankFilterState = 0;
       break;
     case COMMAND_RESCAN_TEMP_PROBES:
       findAllTempSensors();
@@ -363,6 +418,11 @@ void outputState(){
   Serial1.print(",r2=");
   Serial.print(rodiAirHeatState);
   Serial1.print(rodiAirHeatState);
+
+  Serial.print(",r3=");
+  Serial1.print(",r3=");
+  Serial.print(tankFilterState);
+  Serial1.print(tankFilterState);
   
   Serial.println("");
   Serial1.println("");

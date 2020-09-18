@@ -26,13 +26,17 @@ const arduinoCommands = {
 	RODI_AIR_HEAT_ON: 'h',
 	RODI_AIR_HEAT_OFF: 'i',
 
-	RESCAN_TEMP_PROBES: 'j',
+	TANK_FILTER_ON: 'j',
+	TANK_FILTER_OFF: 'k',
+
+	RESCAN_TEMP_PROBES: 'z',
 };
 
 const validStates = [
 	'm1',
 	'r1',
 	'r2',
+	'r3',
 	't1',
 	't2',
 	'w1',
