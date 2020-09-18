@@ -3,7 +3,7 @@
 [Unit]
 Description=Node Aquarium Water Changer
 Documentation=https://github.com/RyAndrew/AquariumWaterChange
-After=multi-user.target
+After=network-online.target
 
 [Service]
 Type=simple
@@ -12,12 +12,15 @@ User=pi
 Group=1000
 
 WorkingDirectory=/home/pi/aquariumWaterChange
-ExecStart=/usr/local/bin/node /home/pi/aquariumWaterChange/aquariumWaterChange.js
+ExecStart=/usr/local/bin/node aquariumWaterChange.js
 ExecReload=
 ExecStop=
+SyslogIdentifier=aquariumwaterchange
+StandardOutput=syslog
+StandardError=syslog
 
 Restart=always
-RestartSec=1s
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
