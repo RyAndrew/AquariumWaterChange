@@ -267,22 +267,16 @@ void handleSerialCommand() {
       filterOff();
       break;
     case COMMAND_DRAIN_TANK:
-      lastCommand = COMMAND_DRAIN_TANK;
-      runningCommand = COMMAND_DRAIN_TANK;
+      runningCommand = lastCommand = COMMAND_DRAIN_TANK;
       lastCommandResult = COMMAND_RUNNING;
-      triggerSerialOutput = 1;
       break;
     case COMMAND_FILL_TANK:
-      lastCommand = COMMAND_FILL_TANK;
-      runningCommand = COMMAND_FILL_TANK;
+      runningCommand = lastCommand = COMMAND_FILL_TANK;
       lastCommandResult = COMMAND_RUNNING;
-      triggerSerialOutput = 1;
       break;
     case COMMAND_WATER_CHANGE:
-      lastCommand = COMMAND_WATER_CHANGE;
-      runningCommand = COMMAND_WATER_CHANGE;
+      runningCommand = lastCommand = COMMAND_WATER_CHANGE;
       lastCommandResult = COMMAND_RUNNING;
-      triggerSerialOutput = 1;
       break;
     case COMMAND_IDLE:
       resetAllOutputs();
@@ -290,7 +284,6 @@ void handleSerialCommand() {
       lastCommand = COMMAND_IDLE;
       runningCommand = COMMAND_IDLE;
       lastCommandResult = COMMAND_SUCCESS;
-      triggerSerialOutput = 1;
   
       break;
   }
@@ -597,27 +590,13 @@ void readSerialCommand(){
     if (cmdRecieved.length() == 2) {
       serialCommand = cmdRecieved.charAt(0);
     }
-
-    //Serial1.println("arduino serial!");
-    // Serial.print(serialCommandChar);
-    //Serial1.print(serialCommandChar);
-
-    //Serial1.print(" - ");
-    //Serial1.println(serialCommand);
   }
-  //  while(serialBytesAvailable){
-  //
-  //
-  //
-  //    serialBytesAvailable = Serial1.available();
-  //  }
-  //  Serial.print(" - ");
-  //  Serial.println(serialCommand);
 
   if (serialCommand != 0 && serialCommand > 96 && serialCommand < 123 ) {
     Serial.print("Recieved Command ");
     Serial.println(serialCommand);
     handleSerialCommand();
+    triggerSerialOutput = true;
   }
 
 }
