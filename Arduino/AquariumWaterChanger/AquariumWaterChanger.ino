@@ -36,7 +36,31 @@ float tempProbeTankReadingLast = 0;
 #define COMMAND_TANK_FILTER_ON 'j'
 #define COMMAND_TANK_FILTER_OFF 'k'
 
+#define COMMAND_IDLE 'l'
+#define COMMAND_DRAIN_TANK 'm'
+#define COMMAND_FILL_TANK 'n'
+#define COMMAND_WATER_CHANGE 'o'
+
 #define COMMAND_RESCAN_TEMP_PROBES 'z'
+
+enum states {
+  STATE_IDLE,
+  STATE_DRAIN,
+  STATE_FILL,
+  STATE_CHANGE
+};
+uint8_t currentState = STATE_IDLE;
+
+char lastCommand = '0';
+char runningCommand = '0';
+
+enum commandResults {
+  COMMAND_SUCCESS,
+  COMMAND_RUNNING,
+  COMMAND_FAIL
+};
+uint8_t lastCommandResult = COMMAND_SUCCESS;
+
 
 char serialCommand = 0;
 
@@ -109,14 +133,6 @@ void setup() {
   pinMode(pinRodiAirHeat, OUTPUT);
   digitalWrite(pinRodiAirHeat, HIGH);
 
-  //  serialCommand = COMMAND_DRAIN_TANK_VALVE_CLOSE;
-  //  handleSerialCommand();
-  //  serialCommand = COMMAND_FILL_TANK_PUMP_OFF;
-  //  handleSerialCommand();
-  //  serialCommand = COMMAND_RODI_AIR_HEAT_OFF;
-  //  handleSerialCommand();
-
-
   findAllTempSensors();
 }
 // the loop routine runs over and over again forever:
@@ -133,7 +149,6 @@ void loop() {
   outputState();
 
 }
-
 void handleSolenoidState() {
 
   if(tankDrainSolenoidValveState == 1){
@@ -160,7 +175,6 @@ void handleSolenoidState() {
           Serial.println("solenoid closing at 100%");
         }else{
           if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
-            //tankDrainSolenoidValveState = 0;
             tankDrainSolenoidValveStatePwm = 0;
             tankDrainSolenoidValveStateOpenTime = 0;
             analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
@@ -177,19 +191,22 @@ void handleSerialCommand() {
     case COMMAND_PING:
       Serial.println("pong");
       break;
+    case COMMAND_RESCAN_TEMP_PROBES:
+      findAllTempSensors();
+      break;
     case COMMAND_DRAIN_TANK_VALVE_OPEN:
-      digitalWrite(pinTankDrainSolenoidValveBkp, HIGH);
-      
       tankDrainSolenoidValveState = 1;
       tankDrainSolenoidValveStatePwm = 0;
+      
+      digitalWrite(pinTankDrainSolenoidValveBkp, HIGH);
       break;
     case COMMAND_DRAIN_TANK_VALVE_CLOSE:
-      digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
       
       tankDrainSolenoidValveState = 0;
       tankDrainSolenoidValveStatePwm = 1;
       tankDrainSolenoidValveStateOpenTime = 0;
-      //analogWrite(pinTankDrainSolenoidValve, 0);
+      
+      digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
       break;
     case COMMAND_FILL_TANK_PUMP_ON:
       digitalWrite(pinTankFillPump, LOW);
@@ -215,10 +232,45 @@ void handleSerialCommand() {
       digitalWrite(pinTankFilter, HIGH);
       tankFilterState = 0;
       break;
-    case COMMAND_RESCAN_TEMP_PROBES:
-      findAllTempSensors();
+    case COMMAND_DRAIN_TANK:
+      lastCommand = COMMAND_DRAIN_TANK;
+      runningCommand = COMMAND_DRAIN_TANK;
+      lastCommandResult = COMMAND_RUNNING;
+      triggerSerialOutput = 1;
       break;
+    case COMMAND_FILL_TANK:
+      lastCommand = COMMAND_FILL_TANK;
+      runningCommand = COMMAND_FILL_TANK;
+      lastCommandResult = COMMAND_RUNNING;
+      triggerSerialOutput = 1;
+      break;
+    case COMMAND_WATER_CHANGE:
+      lastCommand = COMMAND_WATER_CHANGE;
+      runningCommand = COMMAND_WATER_CHANGE;
+      lastCommandResult = COMMAND_RUNNING;
+      triggerSerialOutput = 1;
+      break;
+    case COMMAND_IDLE:
+      lastCommand = COMMAND_IDLE;
+      runningCommand = COMMAND_IDLE;
+      lastCommandResult = COMMAND_SUCCESS;
+      triggerSerialOutput = 1;
+      
+      tankFilterState = 1;
+      digitalWrite(pinTankFilter, LOW);
 
+      tankDrainSolenoidValveState = 0;
+      tankDrainSolenoidValveStatePwm = 1;
+      tankDrainSolenoidValveStateOpenTime = 0;
+      digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
+      
+      rodiAirHeatState = 0;
+      digitalWrite(pinRodiAirHeat, HIGH);
+      
+      tankFillPumpState = 0;
+      digitalWrite(pinTankFillPump, HIGH);
+  
+      break;
   }
   serialCommand = 0;
 
@@ -368,9 +420,24 @@ void outputState(){
   }
   triggerSerialOutput = 0;
   lastFullOutputStateTime = millis();
-
-  Serial.print("w1=");
-  Serial1.print("w1=");
+  
+  Serial.print("s=");
+  Serial1.print("s=");
+  Serial.print(currentState);
+  Serial1.print(currentState);
+  
+  Serial.print(",c=");
+  Serial1.print(",c=");
+  Serial.print(lastCommand);
+  Serial1.print(lastCommand);
+  
+  Serial.print(",cr=");
+  Serial1.print(",cr=");
+  Serial.print(lastCommandResult);
+  Serial1.print(lastCommandResult);
+  
+  Serial.print(",w1=");
+  Serial1.print(",w1=");
   if (levelSensor1State == 1) {
     Serial.print("0");
     Serial1.print("0");
@@ -440,8 +507,8 @@ void outputState(){
   Serial.print(tankFilterState);
   Serial1.print(tankFilterState);
   
-  Serial.println("");
-  Serial1.println("");
+  Serial.println();
+  Serial1.println();
 
 }
 void readSerialCommand(){

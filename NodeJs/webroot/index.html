@@ -19,16 +19,32 @@ body,html {
 .label {
     flex-grow: 1;
 }
-.temp, .button, .waterlevel {
-    display: flex;
+.temp, .button, .waterlevel, .info {
     line-height: 40px;
-    height:40px;
     margin:0 0 10px 0;
     padding: 5px 10px;
     border: 1px solid #e8e8e8;
     background-color: #f5f5f5;
     border-radius: 10px;
     text-align: left;
+}
+.temp, .button, .waterlevel {
+    display: flex;
+}
+.info {
+    font-size: 24px;
+    line-height: 24px;
+}
+.last-command-label {
+    font-size: 20px;
+    font-style: italic;
+}
+.last-command-output {
+    display: flex;
+}
+.last-command-output div {
+    flex-grow: 1;
+    text-align:center;
 }
 .waterlevel .state, .temp .state, .button .state {
 	width:80px;
@@ -75,6 +91,9 @@ h3 {
 .head-water-levels {
     color:#80adff;
 }
+.head-commands {
+    color:#ffcb66;
+}
 .head-control {
     color:#5bd85b;
 }
@@ -93,7 +112,17 @@ h3 {
 <div class="waterlevel" id="waterlevel-w3"><div class="label">RODI High</div><div class="state">-</div></div>
 <div class="waterlevel" id="waterlevel-w4"><div class="label">RODI Low</div><div class="state">-</div></div>
 
-<h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Control</h3>
+<h3 class="head-commands"><span class="no-italic">&#x1F916;</span> Commands</h3>
+<div class="info" id="last-command">
+    <div class="last-command-label">Last Cmd:</div>
+    <div class="last-command-output"><div id="command"></div><div id="result"></div></div>
+</div>
+<div class="button" id="button-co"><div class="label">Water Change</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cm"><div class="label">Drain Tank</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cn"><div class="label">Fill Tank</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cl"><div class="label">Go Idle</div><div class="state OFF">RUN</div></div>
+
+<h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Manual Control</h3>
 <div class="button" id="button-r3"><div class="label">Tank Filter & Circ</div><div class="state ON">ON</div></div>
 <div class="button" id="button-r2"><div class="label">RODI Air & Heat</div><div class="state OFF">OFF</div></div>
 <div class="button" id="button-r1"><div class="label">Fill Pump</div><div class="state OFF">OFF</div></div>
@@ -105,36 +134,77 @@ var socket;
 
 let lastState = false;
 var controls = {
+    'co':{
+        type:'command',
+        command:'WATER_CHANGE'
+    },
+    'cm':{
+        type:'command',
+        command:'DRAIN_TANK'
+    },
+    'cn':{
+        type:'command',
+        command:'FILL_TANK'
+    },
+    'cl':{
+        type:'command',
+        command:'IDLE'
+    },
     'r1':{
-        type:'button',
+        type:'control',
         states:{
             0:'FILL_TANK_PUMP_OFF',
             1:'FILL_TANK_PUMP_ON'
         }
     },
     'r2':{
-        type:'button',
+        type:'control',
         states:{
             0:'RODI_AIR_HEAT_OFF',
             1:'RODI_AIR_HEAT_ON'
         }
     },
     'r3':{
-        type:'button',
+        type:'control',
         states:{
             0:'TANK_FILTER_OFF',
             1:'TANK_FILTER_ON'
         }
     },
     'm1':{
-        type:'button',
+        type:'control',
         states:{
             0:'DRAIN_TANK_VALVE_CLOSE',
             1:'DRAIN_TANK_VALVE_OPEN'
         }
     }
-};
-
+}
+function getStateName(state){
+    let name = '';
+    forEachControl(function (control) {
+        if(control.substr(1) == state){
+            name = titleCase(controls[control].command.replace('_', ' ').toLowerCase());
+        }
+    });
+    return name;
+}
+function titleCase(str) {
+    var splitStr = str.toLowerCase().split(' ');
+    for (var i = 0; i < splitStr.length; i++) {
+        splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);
+    }
+    return splitStr.join(' ');
+}
+function getCommandResultName(commandResult){
+    switch(commandResult){
+        case '0':
+            return 'Success';
+        case '1':
+            return 'Running';
+        case '2':
+            return 'Failed';
+    }
+}
 // const commands = {
 //     PING
 //
@@ -191,7 +261,6 @@ function connect() {
         socket.close();
     };
 }
-connect();
 
 function updateButtonState(id, state){
     //console.log('updateButtonState',buttonId,lastState[buttonId],'==',state);
@@ -224,12 +293,22 @@ function updateWaterLevelState(id, state){
     //el.classList.replace(state==1 ? 'YES' : 'NO', state==1 ? 'NO': 'YES' );
     el.innerHTML = state==1 ? '&#x1F4A7;' : '&#x1F573;';
 }
+function updateLastCommand(state){
+
+    if(!lastState || lastState.c != state.c){
+        document.querySelector('#last-command #command').innerHTML = getStateName(state.c);
+    }
+    if(!lastState || lastState.cr != state.cr){
+        document.querySelector('#last-command #result').innerHTML = getCommandResultName(state.cr);
+    }
+}
 function updateState(state){
-    //console.log('updateState',state);
+    console.log('updateState',state);
 
     updateTempState('t2', state.t2);
     updateTempState('t1', state.t1);
 
+    updateLastCommand(state);
     
     // updateButtonState('r1',state.r1);
     // updateButtonState('r2',state.r2);
@@ -243,7 +322,7 @@ function updateState(state){
 
     forEachControl(function(control){
         switch(controls[control].type){
-            case 'button':
+            case 'control':
                 updateButtonState(control,state[control]);
             break;
         }
@@ -256,10 +335,15 @@ function forEachControl(fn){
     Object.keys(controls).forEach(control => {fn(control)});
 }
 
-function toggle(el){
-	if(!el.hasOwnProperty('dataValue')){
-	    return;
-    }
+function sendCommand(el){
+    socket.send(JSON.stringify({
+        action:'cmd',
+        value:controls[el.controls].command,
+        state:'s',
+        stateValue:el.controls.substr(1)
+    }));
+}
+function toggleControl(el){
 
     let newVal = el.dataValue == 1 ? 0 : 1;
 
@@ -274,31 +358,55 @@ function toggle(el){
     }));
 }
 
+function initControlButtons() {
+    forEachControl(function (control) {
+        if (controls[control].type !== 'control') {
+            return;
+        }
+        let el = document.querySelector('#button-' + control + ' .state');
+        el.controls = control;
 
-forEachControl(function(control){
-	let el = document.querySelector('#button-'+control+' .state');
-	el.controls = control;
+        el.addEventListener('click', function (event) {
+            //if(event.target.touchEvent){
+            // 	return;
+            //}
+            toggleControl(event.target);
+        });
 
-    el.addEventListener('click', function(event){
-        //if(event.target.touchEvent){
-        // 	return;
-        //}
-        toggle(event.target);
+        //junk for apple to maybe disable touch. css worked instead
+        // el.addEventListener('touchstart', function(event){
+        //     event.target.touchEvent = true;
+        //     event.returnValue = false;
+        // });
+        // el.addEventListener('touchmove', function(event){
+        //     event.returnValue = false;
+        // });
+        // el.addEventListener('touchend', function(event){
+        //     event.target.touchEvent = false;
+        //     toggle(event.target);
+        //     event.returnValue = false;
+        // });
     });
+}
+function initCommandButtons() {
+    forEachControl(function (control) {
+        if (controls[control].type !== 'command') {
+            return;
+        }
+        let el = document.querySelector('#button-' + control + ' .state');
+        el.controls = control;
 
-    //junk for apple to maybe disable touch. css worked instead
-	// el.addEventListener('touchstart', function(event){
-    //     event.target.touchEvent = true;
-    //     event.returnValue = false;
-	// });
-	// el.addEventListener('touchmove', function(event){
-    //     event.returnValue = false;
-	// });
-	 // el.addEventListener('touchend', function(event){
-     //     event.target.touchEvent = false;
-     //     toggle(event.target);
-     //     event.returnValue = false;
-	 // });
-});
+        el.addEventListener('click', function (event) {
+            //if(event.target.touchEvent){
+            // 	return;
+            //}
+            sendCommand(event.target);
+        });
+    });
+}
+
+connect();
+initControlButtons();
+initCommandButtons();
 
 </script>

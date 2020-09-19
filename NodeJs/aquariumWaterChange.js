@@ -29,21 +29,33 @@ const arduinoCommands = {
 	TANK_FILTER_ON: 'j',
 	TANK_FILTER_OFF: 'k',
 
+	IDLE: 'l',
+	DRAIN_TANK: 'm',
+	FILL_TANK: 'n',
+	WATER_CHANGE: 'o',
+
 	RESCAN_TEMP_PROBES: 'z',
 };
 
 const validStates = [
-	'm1',
-	'r1',
-	'r2',
-	'r3',
-	't1',
-	't2',
-	'w1',
-	'w2',
-	'w3',
-	'w4',
-	'w1'
+	's', //state
+
+	'c', //last command
+	'cr', //last command result
+
+	'r1', //relay 1 = Tank Fill Pump
+	'r2', //relay 2 = RODI heat & air
+	'r3', //relay 3 = Tank Filter
+
+	'm1', //mosfet 1 = Tank Drain Solenoid Valve
+
+	't1', //Temp 1 = Tank
+	't2', //Temp 2 = RODI
+
+	'w1', // Water Level 1 = Tank High
+	'w2', // Water Level 2 = Tank Low
+	'w3', // Water Level 3 = RODI High
+	'w4', // Water Level 4 = RODI Low
 ];
 
 
