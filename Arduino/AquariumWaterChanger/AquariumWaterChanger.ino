@@ -76,7 +76,7 @@ unsigned long lastFullOutputStateTime = 0;
 int pinTankDrainSolenoidValveBkp = 21;
 int pinTankDrainSolenoidValve = 6;
 byte tankDrainSolenoidValveState = 0;
-unsigned long tankDrainSolenoidValveStateInterval = 2000;
+unsigned long tankDrainSolenoidValveStateInterval = 1000;
 unsigned long tankDrainSolenoidValveStateOpenTime = 0;
 byte tankDrainSolenoidValveStatePwm = 0;
 
@@ -140,17 +140,32 @@ void handleSolenoidState() {
       if(tankDrainSolenoidValveStatePwm == 0){
         if(tankDrainSolenoidValveStateOpenTime == 0){
           tankDrainSolenoidValveStateOpenTime = millis();
+          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
+          Serial.println("solenoid open at 100%");
         }else{
             if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
               tankDrainSolenoidValveStateOpenTime = 0;
               tankDrainSolenoidValveStatePwm = 1;
-              analogWrite(pinTankDrainSolenoidValve, 77); // 30%
-              
-              //Serial.println("solenoid at 30%");
-            }else{
-              analogWrite(pinTankDrainSolenoidValve, 255);
-              //Serial.println("solenoid at 100%");
+              analogWrite(pinTankDrainSolenoidValve, 77); // open valve 30%
+              Serial.println("solenoid open at 30%");
             }
+        }
+      }
+  }else{
+    //if we just closed the valve, then give solenoid full voltage for 250ms to "hammer" it shut
+      if(tankDrainSolenoidValveStatePwm == 1){
+        if(tankDrainSolenoidValveStateOpenTime == 0){
+          tankDrainSolenoidValveStateOpenTime = millis();
+          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
+          Serial.println("solenoid closing at 100%");
+        }else{
+          if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
+            //tankDrainSolenoidValveState = 0;
+            tankDrainSolenoidValveStatePwm = 0;
+            tankDrainSolenoidValveStateOpenTime = 0;
+            analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
+            Serial.println("solenoid closing at 0%");
+          }
         }
       }
   }
@@ -172,8 +187,9 @@ void handleSerialCommand() {
       digitalWrite(pinTankDrainSolenoidValveBkp, LOW);
       
       tankDrainSolenoidValveState = 0;
-      tankDrainSolenoidValveStatePwm = 0;
-      analogWrite(pinTankDrainSolenoidValve, 0);
+      tankDrainSolenoidValveStatePwm = 1;
+      tankDrainSolenoidValveStateOpenTime = 0;
+      //analogWrite(pinTankDrainSolenoidValve, 0);
       break;
     case COMMAND_FILL_TANK_PUMP_ON:
       digitalWrite(pinTankFillPump, LOW);
