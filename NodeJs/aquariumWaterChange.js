@@ -30,9 +30,10 @@ const arduinoCommands = {
 	TANK_FILTER_OFF: 'k',
 
 	IDLE: 'l',
-	DRAIN_TANK: 'm',
-	FILL_TANK: 'n',
-	WATER_CHANGE: 'o',
+	HEAT_AERATE_RODI: 'm',
+	DRAIN_TANK: 'n',
+	FILL_TANK: 'o',
+	WATER_CHANGE: 'p',
 
 	RESCAN_TEMP_PROBES: 'z',
 };

@@ -117,9 +117,10 @@ h3 {
     <div class="last-command-label">Last Cmd:</div>
     <div class="last-command-output"><div id="command"></div><div id="result"></div></div>
 </div>
-<div class="button" id="button-co"><div class="label">Water Change</div><div class="state OFF">RUN</div></div>
-<div class="button" id="button-cm"><div class="label">Drain Tank</div><div class="state OFF">RUN</div></div>
-<div class="button" id="button-cn"><div class="label">Fill Tank</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cp"><div class="label">Water Change</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cm"><div class="label">Heat Aerate RODI</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-cn"><div class="label">Drain Tank</div><div class="state OFF">RUN</div></div>
+<div class="button" id="button-co"><div class="label">Fill Tank</div><div class="state OFF">RUN</div></div>
 <div class="button" id="button-cl"><div class="label">Go Idle</div><div class="state OFF">RUN</div></div>
 
 <h3 class="head-control"><span class="no-italic">&#x1F579;&#xFE0F;</span> Manual Control</h3>
@@ -134,15 +135,19 @@ var socket;
 
 let lastState = false;
 var controls = {
-    'co':{
+    'cp':{
         type:'command',
         command:'WATER_CHANGE'
     },
     'cm':{
         type:'command',
-        command:'DRAIN_TANK'
+        command:'HEAT_AERATE_RODI'
     },
     'cn':{
+        type:'command',
+        command:'DRAIN_TANK'
+    },
+    'co':{
         type:'command',
         command:'FILL_TANK'
     },
@@ -183,7 +188,7 @@ function getStateName(state){
     let name = '';
     forEachControl(function (control) {
         if(control.substr(1) == state){
-            name = titleCase(controls[control].command.replace('_', ' ').toLowerCase());
+            name = titleCase(controls[control].command.replaceAll('_', ' ').toLowerCase());
         }
     });
     return name;

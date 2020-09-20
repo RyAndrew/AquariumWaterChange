@@ -2,7 +2,7 @@
 #include <DallasTemperature.h>
 
 //comment out for production. disables serial messages output via usb
-//#define DEV_ENABLE_SERIAL_DEBUG true
+#define DEV_ENABLE_SERIAL_DEBUG true
 
 #define ONE_WIRE_BUS 10
 
@@ -40,9 +40,10 @@ float tempProbeTankReadingLast = 0;
 #define COMMAND_TANK_FILTER_OFF 'k'
 
 #define COMMAND_IDLE 'l'
-#define COMMAND_DRAIN_TANK 'm'
-#define COMMAND_FILL_TANK 'n'
-#define COMMAND_WATER_CHANGE 'o'
+#define COMMAND_HEAT_AERATE_RODI  'm'
+#define COMMAND_DRAIN_TANK  'n'
+#define COMMAND_FILL_TANK 'o'
+#define COMMAND_WATER_CHANGE 'p'
 
 #define COMMAND_RESCAN_TEMP_PROBES 'z'
 
@@ -114,6 +115,9 @@ unsigned long tankDrainTimeout = 10 * 60 * 1000;// 10 minutes for max drain time
 unsigned long tankFillStartTime = 0;
 unsigned long tankFillTimeout = 5 * 60 * 1000;// 5 minutes for max fill time
 
+unsigned long rodiHeatStartTime = 0;
+unsigned long rodiHeatTimeout = 2 * 60 * 60 * 1000;// 2 hours for max heat time
+
 bool triggerSerialOutput = true;
 
 // the setup routine runs once when you press reset:
@@ -170,6 +174,44 @@ void processActiveCommand(){
     //    nothing to do
     //  break;
     
+    case COMMAND_HEAT_AERATE_RODI:
+    
+      //if "rodi low" does not detect water = error, if "rodi high" does not detect water = error
+      if(runningCommandStarted == 0 && (levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+       #ifdef DEV_ENABLE_SERIAL_DEBUG
+        if(levelSensor3State == NO_WATER){
+            Serial.println("air heat failed - rodi not full");
+        }
+        if(levelSensor4State == NO_WATER){
+            Serial.println("air heat failed - rodi low water detected");
+        }
+       #endif
+       
+        finishCommand(COMMAND_FAIL);
+        return;  
+      }
+      
+      //start timer if it hasn't, also useful for first time command has started, reset everything just in case
+      if(runningCommandStarted == 0){
+        runningCommandStarted = 1;
+        resetAllOutputs();
+        rodiHeatStartTime = millis();
+        rodiAirHeatOn();
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("rodi heat air started");
+        #endif
+      }
+
+      if (millis() - rodiHeatStartTime >= rodiHeatTimeout) {
+        finishCommand(COMMAND_FAIL);
+        return;
+      }
+      
+      //when rodi temp sensor matches tank temp sensor = we are done
+      if(tempProbeRodiReading >= tempProbeTankReading){
+        finishCommand(COMMAND_SUCCESS);
+      }
+      break;
     case COMMAND_DRAIN_TANK:
     
       //if water sensor for "tank low" does not detect water = tank already drained = error
@@ -354,6 +396,11 @@ void handleSerialCommand() {
       break;
     case COMMAND_TANK_FILTER_OFF:
       filterOff();
+      break;
+    case COMMAND_HEAT_AERATE_RODI:
+      runningCommand = lastCommand = COMMAND_HEAT_AERATE_RODI;
+      lastCommandResult = COMMAND_RUNNING;
+      runningCommandStarted = 0;
       break;
     case COMMAND_DRAIN_TANK:
       runningCommand = lastCommand = COMMAND_DRAIN_TANK;
