@@ -292,22 +292,19 @@ function updateWaterLevelState(id, state){
     el.innerHTML = state==1 ? '&#x1F4A7;' : '&#x1F573;';
 }
 function updateLastCommand(state){
-    console.log(state);
-    let cmd = '';
-    if(!lastState || lastState.c != state.c){
-        cmd = getStateName(state.c);
-        document.querySelector('#last-command #command').innerHTML = cmd;
+
+    let cmd = getStateName(state.c);
+    document.querySelector('#last-command #command').innerHTML = cmd;
+
+    let result = '';
+    if(cmd !== 'Idle'){
+        console.log('cmd result cmd not idle');
+        result = getCommandResultName(state.cr);
     }
-    if(!lastState || lastState.cr != state.cr){
-        let result = '';
-        if(cmd !== 'Idle'){
-            result = getCommandResultName(state.cr);
-        }
-        document.querySelector('#last-command #result').innerHTML = result;
-    }
+    document.querySelector('#last-command #result').innerHTML = result;
+
 }
 function updateState(state){
-    console.log('updateState',state);
 
     updateTempState('t2', state.t2);
     updateTempState('t1', state.t1);
