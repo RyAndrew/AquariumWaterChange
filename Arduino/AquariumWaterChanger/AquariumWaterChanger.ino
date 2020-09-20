@@ -183,6 +183,7 @@ void processActiveCommand(){
       if (millis() - tankDrainStartTime >= tankDrainTimeout) {
         resetAllOutputs();
         runningCommand = 0;
+        tankDrainStartTime = 0;
         lastCommandResult = COMMAND_FAIL;
         triggerSerialOutput = true;
         return;
@@ -191,6 +192,7 @@ void processActiveCommand(){
       //if drain is closed open it!
       if(tankDrainSolenoidValveState == 0){
         drainOpen();
+        Serial.println("draining tank");
       }
 
       //when water sensor for "tank low" does not detect water = we are done
@@ -233,6 +235,7 @@ void processActiveCommand(){
       if (millis() - tankFillStartTime >= tankFillTimeout) {
         resetAllOutputs();
         runningCommand = 0;
+        tankFillStartTime = 0;
         lastCommandResult = COMMAND_FAIL;
         triggerSerialOutput = true;
         return;
@@ -241,6 +244,7 @@ void processActiveCommand(){
       //if pump is off turn it on
       if(tankFillPumpState == 0){
         pumpOn();
+        Serial.println("filling tank");
       }
       
       //water sensor for "tank high" detects water = command done
