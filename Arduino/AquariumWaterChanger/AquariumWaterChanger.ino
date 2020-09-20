@@ -242,7 +242,16 @@ void processActiveCommand(){
       if(tankFillPumpState == 0){
         pumpOn();
       }
-
+      
+      //water sensor for "tank high" detects water = command done
+      if(levelSensor1State == YES_WATER){
+        resetAllOutputs();
+        tankFillStartTime = 0;
+        runningCommand = 0;
+        lastCommandResult = COMMAND_SUCCESS;
+        triggerSerialOutput = 1;
+      }
+      
       //water sensor for "tank high" detects water = command done
       if(levelSensor1State == YES_WATER){
         resetAllOutputs();
@@ -523,42 +532,42 @@ void outputState(){
   
   Serial.print(",w1=");
   Serial1.print(",w1=");
-  if (levelSensor1State == NO_WATER) {
-    Serial.print("0");
-    Serial1.print("0");
-  } else {
+  if (levelSensor1State == YES_WATER) {
     Serial.print("1");
     Serial1.print("1");
+  } else {
+    Serial.print("0");
+    Serial1.print("0");
   }
 
   Serial.print(",w2=");
   Serial1.print(",w2=");
-  if (levelSensor2State == NO_WATER) {
-    Serial.print("0");
-    Serial1.print("0");
-  } else {
+  if (levelSensor2State == YES_WATER) {
     Serial.print("1");
     Serial1.print("1");
+  } else {
+    Serial.print("0");
+    Serial1.print("0");
   }
 
   Serial.print(",w3=");
   Serial1.print(",w3=");
-  if (levelSensor3State == NO_WATER) {
-    Serial.print("0");
-    Serial1.print("0");
-  } else {
+  if (levelSensor3State == YES_WATER) {
     Serial.print("1");
     Serial1.print("1");
+  } else {
+    Serial.print("0");
+    Serial1.print("0");
   }
 
   Serial.print(",w4=");
   Serial1.print(",w4=");
-  if (levelSensor4State == NO_WATER) {
-    Serial.print("0");
-    Serial1.print("0");
-  } else {
+  if (levelSensor4State == YES_WATER) {
     Serial.print("1");
     Serial1.print("1");
+  } else {
+    Serial.print("0");
+    Serial1.print("0");
   }
   
   Serial.print(",t1=");
