@@ -249,9 +249,9 @@ void processActiveCommand(){
         finishCommand(COMMAND_SUCCESS);
       }
       
-      //water sensor for "tank high" detects water = command done
-      if(levelSensor1State == YES_WATER){
-        finishCommand(COMMAND_SUCCESS);
+      //water sensor for "rodi low" does not detect water = command done
+      if(levelSensor4State == NO_WATER){
+        finishCommand(COMMAND_FAIL);
       }
           
       break;
@@ -545,74 +545,33 @@ void outputState(){
   #endif
   Serial1.print("c=");Serial1.print(lastCommand);
 
+
   #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print(",cr=");Serial.print(lastCommandResult);
   #endif
   Serial1.print(",cr=");Serial1.print(lastCommandResult);
+
   
   #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print(",w1=");
+    Serial.print(",w1=");Serial.print(levelSensor1State == YES_WATER ? "1" : "0");
   #endif
-  Serial1.print(",w1=");
-  if (levelSensor1State == YES_WATER) {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.print("1");
-    #endif
-    Serial1.print("1");
-  } else {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.print("0");
-    #endif
-    Serial1.print("0");
-  }
-
-  #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print(",w2=");
-  #endif
-  Serial1.print(",w2=");
-  if (levelSensor2State == YES_WATER) {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print("1");
-    #endif
-    Serial1.print("1");
-  } else {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print("0");
-    #endif
-    Serial1.print("0");
-  }
+  Serial1.print(",w1=");Serial1.print(levelSensor1State == YES_WATER ? "1" : "0");
   
   #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print(",w3=");
+    Serial.print(",w2=");Serial.print(levelSensor2State == YES_WATER ? "1" : "0");
   #endif
-  Serial1.print(",w3=");
-  if (levelSensor3State == YES_WATER) {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print("1");
-    #endif
-    Serial1.print("1");
-  } else {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print("0");
-    #endif
-    Serial1.print("0");
-  }
+  Serial1.print(",w2=");Serial1.print(levelSensor2State == YES_WATER ? "1" : "0");
 
   #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print(",w4=");
+    Serial.print(",w3=");Serial.print(levelSensor3State == YES_WATER ? "1" : "0");
   #endif
-  Serial1.print(",w4=");
-  if (levelSensor4State == YES_WATER) {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.print("1");
-    #endif
-    Serial1.print("1");
-  } else {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.print("0");
-    #endif
-    Serial1.print("0");
-  }
+  Serial1.print(",w3=");Serial1.print(levelSensor3State == YES_WATER ? "1" : "0");
+
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",w4=");Serial.print(levelSensor4State == YES_WATER ? "1" : "0");
+  #endif
+  Serial1.print(",w4=");Serial1.print(levelSensor4State == YES_WATER ? "1" : "0");
+
 
   #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print(",t1=");Serial.print(tempProbeRodiReading);
@@ -626,7 +585,6 @@ void outputState(){
   Serial1.print(",t2=");Serial1.print(tempProbeTankReading);
   
   
-
   #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print(",m1=");Serial.print(tankDrainSolenoidValveState);
   #endif
