@@ -1,6 +1,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+//comment out for production. disables serial messages output via usb
+//#define DEV_ENABLE_SERIAL_DEBUG true
+
 #define ONE_WIRE_BUS 10
 
 OneWire dallasWire(ONE_WIRE_BUS);
@@ -114,9 +117,12 @@ bool triggerSerialOutput = true;
 // the setup routine runs once when you press reset:
 void setup() {
 
-  Serial.begin(115200); //usb port
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.begin(115200); //usb port
+  #endif
+  
   Serial1.begin(115200); //rx tx pins
-  Serial1.setTimeout(50); //50ms timeout for serial commands // Serial.readStringUntil()
+  Serial1.setTimeout(50); //50ms timeout for serial commands // Serial1.readStringUntil()
 
   pinMode(levelSensor1, INPUT);
   pinMode(levelSensor2, INPUT);
@@ -166,7 +172,10 @@ void processActiveCommand(){
     
       //if water sensor for "tank low" does not detect water = tank already drained = error
       if(tankDrainStartTime == 0 && levelSensor2State == NO_WATER){
-        Serial.println("drain failed - tank low = no water");
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("drain failed - tank low = no water");
+        #endif
+        
         resetAllOutputs();
         runningCommand = 0;
         lastCommandResult = COMMAND_FAIL;
@@ -192,7 +201,10 @@ void processActiveCommand(){
       //if drain is closed open it!
       if(tankDrainSolenoidValveState == 0){
         drainOpen();
-        Serial.println("draining tank");
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("draining tank");
+        #endif
+        
       }
 
       //when water sensor for "tank low" does not detect water = we are done
@@ -210,8 +222,9 @@ void processActiveCommand(){
 
       //if "tank high" detects water = error, if "rodi low" detects water = error, if "rodi high" does not detect water = error
       if(tankFillStartTime == 0 && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+       #ifdef DEV_ENABLE_SERIAL_DEBUG
         if(levelSensor1State == YES_WATER){
-          Serial.println("fill failed - tank full");
+            Serial.println("fill failed - tank full");
         }
         if(levelSensor3State == NO_WATER){
           Serial.println("fill failed - rodi not full");
@@ -219,6 +232,7 @@ void processActiveCommand(){
         if(levelSensor4State == NO_WATER){
           Serial.println("fill failed - rodi low water");
         }
+       #endif
         resetAllOutputs();
         runningCommand = 0;
         lastCommandResult = COMMAND_FAIL;
@@ -244,7 +258,9 @@ void processActiveCommand(){
       //if pump is off turn it on
       if(tankFillPumpState == 0){
         pumpOn();
-        Serial.println("filling tank");
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("filling tank");
+       #endif
       }
       
       //water sensor for "tank high" detects water = command done
@@ -285,13 +301,17 @@ void handleDrainSolenoidState() {
         if(tankDrainSolenoidValveStateOpenTime == 0){
           tankDrainSolenoidValveStateOpenTime = millis();
           analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
-          Serial.println("solenoid open at 100%");
+          #ifdef DEV_ENABLE_SERIAL_DEBUG
+            Serial.println("solenoid open at 100%");
+          #endif
         }else{
             if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
               tankDrainSolenoidValveStateOpenTime = 0;
               tankDrainSolenoidValveStatePwm = 1;
               analogWrite(pinTankDrainSolenoidValve, 77); // open valve 30%
-              Serial.println("solenoid open at 30%");
+              #ifdef DEV_ENABLE_SERIAL_DEBUG
+                Serial.println("solenoid open at 30%");
+              #endif
             }
         }
       }
@@ -301,13 +321,19 @@ void handleDrainSolenoidState() {
         if(tankDrainSolenoidValveStateOpenTime == 0){
           tankDrainSolenoidValveStateOpenTime = millis();
           analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
-          Serial.println("solenoid closing at 100%");
+          #ifdef DEV_ENABLE_SERIAL_DEBUG
+            Serial.println("solenoid closing at 100%");
+          #endif
+          
         }else{
           if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
             tankDrainSolenoidValveStatePwm = 0;
             tankDrainSolenoidValveStateOpenTime = 0;
             analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
-            Serial.println("solenoid closing at 0%");
+            #ifdef DEV_ENABLE_SERIAL_DEBUG
+              Serial.println("solenoid closing at 0%");
+            #endif
+            
           }
         }
       }
@@ -318,7 +344,10 @@ void handleSerialCommand() {
 
   switch (serialCommand) {
     case COMMAND_PING:
-      Serial.println("pong");
+      #ifdef DEV_ENABLE_SERIAL_DEBUG
+        Serial.println("pong");
+      #endif
+      Serial1.println("pong");
       break;
     case COMMAND_RESCAN_TEMP_PROBES:
       findAllTempSensors();
@@ -493,7 +522,9 @@ void readTemps() {
   tempProbeRodiReading = dallas.getTempF(tempProbeRodiAddr);
   if(tempProbeRodiReading == DEVICE_DISCONNECTED_F ) 
   {
-    Serial.println("Error reading temp from Rodi");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.println("Error reading temp from Rodi");
+    #endif
     tempProbeRodiReading = 0;
   }
   if(tempProbeRodiReadingLast != tempProbeRodiReading){
@@ -506,7 +537,9 @@ void readTemps() {
   tempProbeTankReading = dallas.getTempF(tempProbeTankAddr);
   if(tempProbeTankReading == DEVICE_DISCONNECTED_F ) 
   {
-    Serial.println("Error reading temp from Tank");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.println("Error reading temp from Tank");
+    #endif
     tempProbeTankReading = 0;
   }
   if(tempProbeTankReadingLast != tempProbeTankReading){
@@ -524,88 +557,120 @@ void outputState(){
   triggerSerialOutput = 0;
   lastFullOutputStateTime = millis();
   
-  Serial.print("c=");
-  Serial1.print("c=");
-  Serial.print(lastCommand);
-  Serial1.print(lastCommand);
   
-  Serial.print(",cr=");
-  Serial1.print(",cr=");
-  Serial.print(lastCommandResult);
-  Serial1.print(lastCommandResult);
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print("c=");Serial.print(lastCommand);
+  #endif
+  Serial1.print("c=");Serial1.print(lastCommand);
+
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",cr=");Serial.print(lastCommandResult);
+  #endif
+  Serial1.print(",cr=");Serial1.print(lastCommandResult);
   
-  Serial.print(",w1=");
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",w1=");
+  #endif
   Serial1.print(",w1=");
   if (levelSensor1State == YES_WATER) {
-    Serial.print("1");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("1");
+    #endif
     Serial1.print("1");
   } else {
-    Serial.print("0");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("0");
+    #endif
     Serial1.print("0");
   }
 
-  Serial.print(",w2=");
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",w2=");
+  #endif
   Serial1.print(",w2=");
   if (levelSensor2State == YES_WATER) {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print("1");
+    #endif
     Serial1.print("1");
   } else {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print("0");
+    #endif
     Serial1.print("0");
   }
-
-  Serial.print(",w3=");
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",w3=");
+  #endif
   Serial1.print(",w3=");
   if (levelSensor3State == YES_WATER) {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print("1");
+    #endif
     Serial1.print("1");
   } else {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
     Serial.print("0");
+    #endif
     Serial1.print("0");
   }
 
-  Serial.print(",w4=");
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",w4=");
+  #endif
   Serial1.print(",w4=");
   if (levelSensor4State == YES_WATER) {
-    Serial.print("1");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("1");
+    #endif
     Serial1.print("1");
   } else {
-    Serial.print("0");
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("0");
+    #endif
     Serial1.print("0");
   }
-  
-  Serial.print(",t1=");
-  Serial1.print(",t1=");
-  Serial.print(tempProbeRodiReading);
-  Serial1.print(tempProbeRodiReading);
-  
-  Serial.print(",t2=");
-  Serial1.print(",t2=");
-  Serial.print(tempProbeTankReading);
-  Serial1.print(tempProbeTankReading);
 
-
-  Serial.print(",m1=");
-  Serial1.print(",m1=");
-  Serial.print(tankDrainSolenoidValveState);
-  Serial1.print(tankDrainSolenoidValveState);
-
-  Serial.print(",r1=");
-  Serial1.print(",r1=");
-  Serial.print(tankFillPumpState);
-  Serial1.print(tankFillPumpState);
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",t1=");Serial.print(tempProbeRodiReading);
+  #endif
+  Serial1.print(",t1=");Serial1.print(tempProbeRodiReading);
   
-  Serial.print(",r2=");
-  Serial1.print(",r2=");
-  Serial.print(rodiAirHeatState);
-  Serial1.print(rodiAirHeatState);
-
-  Serial.print(",r3=");
-  Serial1.print(",r3=");
-  Serial.print(tankFilterState);
-  Serial1.print(tankFilterState);
   
-  Serial.println();
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",t2=");Serial.print(tempProbeTankReading);
+  #endif
+  Serial1.print(",t2=");Serial1.print(tempProbeTankReading);
+  
+  
+
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",m1=");Serial.print(tankDrainSolenoidValveState);
+  #endif
+  Serial1.print(",m1=");Serial1.print(tankDrainSolenoidValveState);
+  
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",r1=");Serial.print(tankFillPumpState);
+  #endif
+  Serial1.print(",r1=");Serial1.print(tankFillPumpState);
+  
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",r2=");Serial.print(rodiAirHeatState);
+  #endif
+  Serial1.print(",r2=");Serial1.print(rodiAirHeatState);
+
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print(",r3=");Serial.print(tankFilterState);
+  #endif
+  Serial1.print(",r3=");Serial1.print(tankFilterState);
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.println();
+  #endif
   Serial1.println();
 
 }
@@ -638,8 +703,10 @@ void readSerialCommand(){
   }
 
   if (serialCommand != 0 && serialCommand > 96 && serialCommand < 123 ) {
-    Serial.print("Recieved Command ");
-    Serial.println(serialCommand);
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("Recieved Command ");
+      Serial.println(serialCommand);
+    #endif
     handleSerialCommand();
     triggerSerialOutput = true;
   }
