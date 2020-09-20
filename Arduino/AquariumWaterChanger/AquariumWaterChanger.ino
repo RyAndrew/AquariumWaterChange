@@ -106,6 +106,8 @@ unsigned long tankDrainSolenoidValveStateInterval = 1000;
 unsigned long tankDrainSolenoidValveStateOpenTime = 0;
 byte tankDrainSolenoidValveStatePwm = 0;
 
+uint8_t runningCommandStarted = 0;
+
 unsigned long tankDrainStartTime = 0;
 unsigned long tankDrainTimeout = 10 * 60 * 1000;// 10 minutes for max drain time
 
@@ -171,49 +173,37 @@ void processActiveCommand(){
     case COMMAND_DRAIN_TANK:
     
       //if water sensor for "tank low" does not detect water = tank already drained = error
-      if(tankDrainStartTime == 0 && levelSensor2State == NO_WATER){
+      if(runningCommandStarted == 0 && levelSensor2State == NO_WATER){
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("drain failed - tank low = no water");
         #endif
         
-        resetAllOutputs();
-        runningCommand = 0;
-        lastCommandResult = COMMAND_FAIL;
-        triggerSerialOutput = true;
+        finishCommand(COMMAND_FAIL);
         return;  
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
-      if(tankDrainStartTime == 0){
+      if(runningCommandStarted == 0){
+        runningCommandStarted = 1;
+        
         resetAllOutputs();
         tankDrainStartTime = millis();
-      }
-
-      if (millis() - tankDrainStartTime >= tankDrainTimeout) {
-        resetAllOutputs();
-        runningCommand = 0;
-        tankDrainStartTime = 0;
-        lastCommandResult = COMMAND_FAIL;
-        triggerSerialOutput = true;
-        return;
-      }
-      
-      //if drain is closed open it!
-      if(tankDrainSolenoidValveState == 0){
+        
         drainOpen();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("draining tank");
         #endif
-        
       }
+
+      if (millis() - tankDrainStartTime >= tankDrainTimeout) {
+        finishCommand(COMMAND_FAIL);
+        return;
+      }
+
 
       //when water sensor for "tank low" does not detect water = we are done
       if(levelSensor2State == NO_WATER){
-        resetAllOutputs();
-        tankDrainStartTime = 0;
-        runningCommand = 0;
-        lastCommandResult = COMMAND_SUCCESS;
-        triggerSerialOutput = 1;
+        finishCommand(COMMAND_SUCCESS);
       }
       
       break;
@@ -221,7 +211,7 @@ void processActiveCommand(){
     case COMMAND_FILL_TANK:
 
       //if "tank high" detects water = error, if "rodi low" detects water = error, if "rodi high" does not detect water = error
-      if(tankFillStartTime == 0 && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+      if(runningCommandStarted == 0 && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
        #ifdef DEV_ENABLE_SERIAL_DEBUG
         if(levelSensor1State == YES_WATER){
             Serial.println("fill failed - tank full");
@@ -233,52 +223,35 @@ void processActiveCommand(){
           Serial.println("fill failed - rodi low water");
         }
        #endif
-        resetAllOutputs();
-        runningCommand = 0;
-        lastCommandResult = COMMAND_FAIL;
-        triggerSerialOutput = true;
+       
+        finishCommand(COMMAND_FAIL);
         return;  
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
-      if(tankFillStartTime == 0){
+      if(runningCommandStarted == 0){
+        runningCommandStarted = 1;
         resetAllOutputs();
         tankFillStartTime = millis();
-      }
-
-      if (millis() - tankFillStartTime >= tankFillTimeout) {
-        resetAllOutputs();
-        runningCommand = 0;
-        tankFillStartTime = 0;
-        lastCommandResult = COMMAND_FAIL;
-        triggerSerialOutput = true;
-        return;
-      }
-      
-      //if pump is off turn it on
-      if(tankFillPumpState == 0){
         pumpOn();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("filling tank");
-       #endif
+        #endif
+      }
+
+      if (millis() - tankFillStartTime >= tankFillTimeout) {
+        finishCommand(COMMAND_FAIL);
+        return;
       }
       
       //water sensor for "tank high" detects water = command done
       if(levelSensor1State == YES_WATER){
-        resetAllOutputs();
-        tankFillStartTime = 0;
-        runningCommand = 0;
-        lastCommandResult = COMMAND_SUCCESS;
-        triggerSerialOutput = 1;
+        finishCommand(COMMAND_SUCCESS);
       }
       
       //water sensor for "tank high" detects water = command done
       if(levelSensor1State == YES_WATER){
-        resetAllOutputs();
-        tankFillStartTime = 0;
-        runningCommand = 0;
-        lastCommandResult = COMMAND_SUCCESS;
-        triggerSerialOutput = 1;
+        finishCommand(COMMAND_SUCCESS);
       }
           
       break;
@@ -293,6 +266,12 @@ void processActiveCommand(){
       break;
   }
   
+}
+void finishCommand(uint8_t result){
+  resetAllOutputs();
+  lastCommandResult = result;
+  runningCommand = 0;  
+  triggerSerialOutput = true;
 }
 void handleDrainSolenoidState() {
 
@@ -379,14 +358,17 @@ void handleSerialCommand() {
     case COMMAND_DRAIN_TANK:
       runningCommand = lastCommand = COMMAND_DRAIN_TANK;
       lastCommandResult = COMMAND_RUNNING;
+      runningCommandStarted = 0;
       break;
     case COMMAND_FILL_TANK:
       runningCommand = lastCommand = COMMAND_FILL_TANK;
       lastCommandResult = COMMAND_RUNNING;
+      runningCommandStarted = 0;
       break;
     case COMMAND_WATER_CHANGE:
       runningCommand = lastCommand = COMMAND_WATER_CHANGE;
       lastCommandResult = COMMAND_RUNNING;
+      runningCommandStarted = 0;
       break;
     case COMMAND_IDLE:
       resetAllOutputs();
