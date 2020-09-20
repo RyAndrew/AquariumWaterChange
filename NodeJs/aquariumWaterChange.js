@@ -38,7 +38,6 @@ const arduinoCommands = {
 };
 
 const validStates = [
-	's', //state
 
 	'c', //last command
 	'cr', //last command result
