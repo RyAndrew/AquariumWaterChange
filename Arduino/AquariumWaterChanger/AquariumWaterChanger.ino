@@ -43,8 +43,11 @@ float tempProbeTankReadingLast = 0;
 
 #define COMMAND_RESCAN_TEMP_PROBES 'z'
 
-char lastCommand = '0';
+char lastCommand = COMMAND_IDLE;
 char runningCommand = '0';
+
+#define NO_WATER 1
+#define YES_WATER 0
 
 enum commandResults {
   COMMAND_SUCCESS,
@@ -101,7 +104,10 @@ unsigned long tankDrainSolenoidValveStateOpenTime = 0;
 byte tankDrainSolenoidValveStatePwm = 0;
 
 unsigned long tankDrainStartTime = 0;
-unsigned long tankDrainStartTimeout = 10 * 60 * 1000;// 10 minutes max drain time
+unsigned long tankDrainTimeout = 10 * 60 * 1000;// 10 minutes for max drain time
+
+unsigned long tankFillStartTime = 0;
+unsigned long tankFillTimeout = 5 * 60 * 1000;// 5 minutes for max fill time
 
 bool triggerSerialOutput = true;
 
@@ -158,12 +164,13 @@ void processActiveCommand(){
     
     case COMMAND_DRAIN_TANK:
     
-      //if drain is closed and we are below water level already - we have a problem!
-      if(tankDrainStartTime == 0 && tankDrainSolenoidValveState == 0 && levelSensor2State == 1){
+      //if water sensor for "tank low" does not detect water = tank already drained = error
+      if(tankDrainStartTime == 0 && levelSensor2State == NO_WATER){
+        Serial.println("drain failed - tank low = no water");
         resetAllOutputs();
         runningCommand = 0;
         lastCommandResult = COMMAND_FAIL;
-        triggerSerialOutput = 1;
+        triggerSerialOutput = true;
         return;  
       }
       
@@ -172,14 +179,22 @@ void processActiveCommand(){
         resetAllOutputs();
         tankDrainStartTime = millis();
       }
+
+      if (millis() - tankDrainStartTime >= tankDrainTimeout) {
+        resetAllOutputs();
+        runningCommand = 0;
+        lastCommandResult = COMMAND_FAIL;
+        triggerSerialOutput = true;
+        return;
+      }
       
       //if drain is closed open it!
       if(tankDrainSolenoidValveState == 0){
         drainOpen();
       }
 
-      //wait until level 2 sensor is low
-      if(levelSensor2State == 1){
+      //when water sensor for "tank low" does not detect water = we are done
+      if(levelSensor2State == NO_WATER){
         resetAllOutputs();
         tankDrainStartTime = 0;
         runningCommand = 0;
@@ -190,9 +205,62 @@ void processActiveCommand(){
       break;
       
     case COMMAND_FILL_TANK:
+
+      //if "tank high" detects water = error, if "rodi low" detects water = error, if "rodi high" does not detect water = error
+      if(tankFillStartTime == 0 && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+        if(levelSensor1State == YES_WATER){
+          Serial.println("fill failed - tank full");
+        }
+        if(levelSensor3State == NO_WATER){
+          Serial.println("fill failed - rodi not full");
+        }
+        if(levelSensor4State == NO_WATER){
+          Serial.println("fill failed - rodi low water");
+        }
+        resetAllOutputs();
+        runningCommand = 0;
+        lastCommandResult = COMMAND_FAIL;
+        triggerSerialOutput = true;
+        return;  
+      }
+      
+      //start timer if it hasn't, also useful for first time command has started, reset everything just in case
+      if(tankFillStartTime == 0){
+        resetAllOutputs();
+        tankFillStartTime = millis();
+      }
+
+      if (millis() - tankFillStartTime >= tankFillTimeout) {
+        resetAllOutputs();
+        runningCommand = 0;
+        lastCommandResult = COMMAND_FAIL;
+        triggerSerialOutput = true;
+        return;
+      }
+      
+      //if pump is off turn it on
+      if(tankFillPumpState == 0){
+        pumpOn();
+      }
+
+      //water sensor for "tank high" detects water = command done
+      if(levelSensor1State == YES_WATER){
+        resetAllOutputs();
+        tankFillStartTime = 0;
+        runningCommand = 0;
+        lastCommandResult = COMMAND_SUCCESS;
+        triggerSerialOutput = 1;
+      }
+          
       break;
       
     case COMMAND_WATER_CHANGE:
+
+      //wait until rodi is full
+      //wait until water temp matches tank
+      //drain tank
+      //fill tank
+      
       break;
   }
   
@@ -291,7 +359,9 @@ void handleSerialCommand() {
 
 }
 void resetAllOutputs(){
-  drainClose();
+  if(tankDrainSolenoidValveState == 1){
+    drainClose();
+  }
   filterOn();
   pumpOff();
   rodiAirHeatOff();
@@ -318,20 +388,20 @@ void rodiAirHeatOff(){
   digitalWrite(pinRodiAirHeat, HIGH);
 }
 void filterOn(){
-  digitalWrite(pinTankFilter, LOW);
   tankFilterState = 1;
+  digitalWrite(pinTankFilter, LOW);
 }
 void filterOff(){
-  digitalWrite(pinTankFilter, HIGH);
   tankFilterState = 0;
+  digitalWrite(pinTankFilter, HIGH);
 }
 void pumpOn(){
-  digitalWrite(pinTankFillPump, LOW);
   tankFillPumpState = 1;
+  digitalWrite(pinTankFillPump, LOW);
 }
 void pumpOff(){
-  digitalWrite(pinTankFillPump, HIGH);
   tankFillPumpState = 0;
+  digitalWrite(pinTankFillPump, HIGH);
 }
 void readLevelSensors() {
 
@@ -398,9 +468,6 @@ void findAllTempSensors() {
 */
 }
 void readTemps() {
-//  if (tempSensorCount < 1) {
-//    return;
-//  }
 
   if (millis() - lastReadTempsTime < lastReadTempsInterval) {
     return;
@@ -434,41 +501,6 @@ void readTemps() {
   }
   tempProbeTankReadingLast = tempProbeTankReading;
   
-  //  float tempC = dallas.getTempCByIndex(0);
-  //  if(tempC != DEVICE_DISCONNECTED_C){
-  //Serial.print("Temperature for the device 1 (index 0) is: ");
-  //Serial.println(tempC);
-  //}
-
-//  TempDeviceAddress deviceAddress;
-//  float temp;
-//
-//  for (uint8_t i = 0; i < tempSensorCount; i++) {
-//    memcpy(tempSensors[i], deviceAddress, 8);
-//    temp = dallas.getTempF(deviceAddress);
-//    if (temp == DEVICE_DISCONNECTED_C || temp > 200 || temp < 0) {
-//      Serial.print("invalid temp result from sensor ");
-//      Serial.print(i);
-//      Serial.print(" result: ");
-//      Serial.println(temp);
-//
-//      tempSensorData[i] = 0;
-//    } else {
-//      tempSensorData[i] = temp;
-//    }
-//
-//    Serial.print("#");
-//    Serial.print(i + 1);
-//    Serial.print(" - ");
-//    for (int i = 0; i < 8; i++) {
-//      Serial.print(deviceAddress[i], HEX);
-//      Serial.print(",");
-//    }
-//
-//    Serial.print("=");
-//    Serial.println(tempSensorData[i]);
-//  }
-
 }
 void outputState(){
   unsigned long lastSerial = millis() - lastFullOutputStateTime;
@@ -491,7 +523,7 @@ void outputState(){
   
   Serial.print(",w1=");
   Serial1.print(",w1=");
-  if (levelSensor1State == 1) {
+  if (levelSensor1State == NO_WATER) {
     Serial.print("0");
     Serial1.print("0");
   } else {
@@ -501,7 +533,7 @@ void outputState(){
 
   Serial.print(",w2=");
   Serial1.print(",w2=");
-  if (levelSensor2State == 1) {
+  if (levelSensor2State == NO_WATER) {
     Serial.print("0");
     Serial1.print("0");
   } else {
@@ -511,7 +543,7 @@ void outputState(){
 
   Serial.print(",w3=");
   Serial1.print(",w3=");
-  if (levelSensor3State == 1) {
+  if (levelSensor3State == NO_WATER) {
     Serial.print("0");
     Serial1.print("0");
   } else {
@@ -521,7 +553,7 @@ void outputState(){
 
   Serial.print(",w4=");
   Serial1.print(",w4=");
-  if (levelSensor4State == 1) {
+  if (levelSensor4State == NO_WATER) {
     Serial.print("0");
     Serial1.print("0");
   } else {
