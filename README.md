@@ -9,4 +9,5 @@ Arduino + Raspberry Pi Zero + NodeJS Aquarium Automatic Water Changer
 * Temperature sensors are used to match water temperature in water storage to aquarium
 * Mobile Friendly Web UI to view status and control everything
 
-![water change screenshot](https://user-images.githubusercontent.com/3945391/93556828-35daa980-f93f-11ea-88de-3862bfdc95ab.png)
+![water change screenshot](https://user-images.githubusercontent.com/3945391/93692534-0b612b80-faba-11ea-911a-801d13805aa1.png)
+
