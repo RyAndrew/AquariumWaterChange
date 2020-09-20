@@ -235,9 +235,7 @@ function connect() {
 
 // Listen for messages
     socket.addEventListener('message', function (event) {
-        //console.log('Message from server ', event.data);
-        //console.log(event);
-        //console.log(event.data);
+        //console.log('Message from server ', event);
         let msgJson;
         try{
             msgJson = JSON.parse(event.data);
@@ -294,12 +292,18 @@ function updateWaterLevelState(id, state){
     el.innerHTML = state==1 ? '&#x1F4A7;' : '&#x1F573;';
 }
 function updateLastCommand(state){
-
+    console.log(state);
+    let cmd = '';
     if(!lastState || lastState.c != state.c){
-        document.querySelector('#last-command #command').innerHTML = getStateName(state.c);
+        cmd = getStateName(state.c);
+        document.querySelector('#last-command #command').innerHTML = cmd;
     }
     if(!lastState || lastState.cr != state.cr){
-        document.querySelector('#last-command #result').innerHTML = getCommandResultName(state.cr);
+        let result = '';
+        if(cmd !== 'Idle'){
+            result = getCommandResultName(state.cr);
+        }
+        document.querySelector('#last-command #result').innerHTML = result;
     }
 }
 function updateState(state){
