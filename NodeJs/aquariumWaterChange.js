@@ -14,9 +14,6 @@ const Readline = require('@serialport/parser-readline')
 const arduinoCommands = {
 	PING:'a',
 
-	DRAIN_TANK:'b', //opens solenoid valve until tank low sensor triggers
-	FILL_TANK:'c',//checks tank low is triggered and barrel full is triggered, runs pump until tank high is triggered or barrel low is triggered
-
 	DRAIN_TANK_VALVE_OPEN: 'd',
 	DRAIN_TANK_VALVE_CLOSE: 'e',
 
@@ -29,11 +26,11 @@ const arduinoCommands = {
 	TANK_FILTER_ON: 'j',
 	TANK_FILTER_OFF: 'k',
 
-	IDLE: 'l',
-	HEAT_AERATE_RODI: 'm',
-	DRAIN_TANK: 'n',
-	FILL_TANK: 'o',
-	WATER_CHANGE: 'p',
+	IDLE: 'l', //resets everything to default state - filter on and water changer items off
+	HEAT_AERATE_RODI: 'm', //heat the water in RODI storage until it reachest the tank temperature
+	DRAIN_TANK: 'n', //opens solenoid valve until tank low sensor triggers
+	FILL_TANK: 'o', //checks tank low is triggered and barrel full is triggered, runs pump until tank high is triggered or barrel low is triggered
+	WATER_CHANGE: 'p', //run the Heat/Aerate, Drain, Fill commands in that order
 
 	RESCAN_TEMP_PROBES: 'z',
 };

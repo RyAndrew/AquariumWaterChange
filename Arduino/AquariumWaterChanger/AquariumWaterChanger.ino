@@ -23,13 +23,10 @@ float tempProbeTankReading = 0;
 float tempProbeTankReadingLast = 0;
 
 #define COMMAND_PING 'a'
-//opens solenoid valve until tank low sensor triggers
-#define COMMAND_DRAIN_TANK 'b'
-//checks tank low is triggered and barrel full is triggered, runs pump until tank high is triggered or barrel low is triggered
-#define COMMAND_FILL_TANK 'c'
 
 #define COMMAND_DRAIN_TANK_VALVE_OPEN 'd'
 #define COMMAND_DRAIN_TANK_VALVE_CLOSE 'e'
+
 #define COMMAND_FILL_TANK_PUMP_ON 'f'
 #define COMMAND_FILL_TANK_PUMP_OFF 'g'
 
@@ -39,11 +36,11 @@ float tempProbeTankReadingLast = 0;
 #define COMMAND_TANK_FILTER_ON 'j'
 #define COMMAND_TANK_FILTER_OFF 'k'
 
-#define COMMAND_IDLE 'l'
-#define COMMAND_HEAT_AERATE_RODI  'm'
-#define COMMAND_DRAIN_TANK  'n'
-#define COMMAND_FILL_TANK 'o'
-#define COMMAND_WATER_CHANGE 'p'
+#define COMMAND_IDLE 'l' //resets everything to default state - filter on and water changer items off
+#define COMMAND_HEAT_AERATE_RODI  'm' //heat the water in RODI storage until it reachest the tank temperature
+#define COMMAND_DRAIN_TANK  'n' //opens solenoid valve until tank low sensor triggers
+#define COMMAND_FILL_TANK 'o' //checks tank low is triggered and barrel full is triggered, runs pump until tank high is triggered or barrel low is triggered
+#define COMMAND_WATER_CHANGE 'p' //run the Heat/Aerate, Drain, Fill commands in that order
 
 #define COMMAND_RESCAN_TEMP_PROBES 'z'
 
