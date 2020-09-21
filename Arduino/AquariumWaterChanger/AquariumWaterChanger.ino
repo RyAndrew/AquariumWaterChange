@@ -60,6 +60,17 @@ enum commandResults {
 };
 uint8_t lastCommandResult = COMMAND_SUCCESS;
 
+uint8_t runningCommandStarted = false;
+uint8_t runningWaterChangeCommand = false;
+
+unsigned long rodiHeatStartTime = 0;
+unsigned long rodiHeatTimeout = 7200000; // 2 * 60 * 60 * 1000 = 2 hours for max heat time
+
+unsigned long tankDrainStartTime = 0;
+unsigned long tankDrainTimeout = 600000; // 10 * 60 * 1000 = 10 minutes for max drain time
+
+unsigned long tankFillStartTime = 0;
+unsigned long tankFillTimeout = 300000; // 5 * 60 * 1000 = 5 minutes for max fill time
 
 char serialCommand = 0;
 
@@ -103,20 +114,9 @@ unsigned long lastFullOutputStateTime = 0;
 int pinTankDrainSolenoidValveBkp = 21;
 int pinTankDrainSolenoidValve = 6;
 byte tankDrainSolenoidValveState = 0;
-unsigned long tankDrainSolenoidValveStateInterval = 1000;
+unsigned long tankDrainSolenoidValveStateDelay = 1000;
 unsigned long tankDrainSolenoidValveStateOpenTime = 0;
 byte tankDrainSolenoidValveStatePwm = 0;
-
-uint8_t runningCommandStarted = 0;
-
-unsigned long tankDrainStartTime = 0;
-unsigned long tankDrainTimeout = 10 * 60 * 1000;// 10 minutes for max drain time
-
-unsigned long tankFillStartTime = 0;
-unsigned long tankFillTimeout = 5 * 60 * 1000;// 5 minutes for max fill time
-
-unsigned long rodiHeatStartTime = 0;
-unsigned long rodiHeatTimeout = 2 * 60 * 60 * 1000;// 2 hours for max heat time
 
 bool triggerSerialOutput = true;
 
@@ -177,7 +177,7 @@ void processActiveCommand(){
     case COMMAND_HEAT_AERATE_RODI:
     
       //if "rodi low" does not detect water = error, if "rodi high" does not detect water = error
-      if(runningCommandStarted == 0 && (levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+      if(runningCommandStarted == false && (levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
        #ifdef DEV_ENABLE_SERIAL_DEBUG
         if(levelSensor3State == NO_WATER){
             Serial.println("air heat failed - rodi not full");
@@ -192,9 +192,8 @@ void processActiveCommand(){
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
-      if(runningCommandStarted == 0){
-        runningCommandStarted = 1;
-        resetAllOutputs();
+      if(runningCommandStarted == false){
+        runningCommandStarted = true;
         rodiHeatStartTime = millis();
         rodiAirHeatOn();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
@@ -203,19 +202,25 @@ void processActiveCommand(){
       }
 
       if (millis() - rodiHeatStartTime >= rodiHeatTimeout) {
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("rodi heat air timeout failed");
+        #endif
         finishCommand(COMMAND_FAIL);
         return;
       }
       
       //when rodi temp sensor matches tank temp sensor = we are done
       if(tempProbeRodiReading >= tempProbeTankReading){
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("rodi heat air success");
+        #endif
         finishCommand(COMMAND_SUCCESS);
       }
       break;
     case COMMAND_DRAIN_TANK:
     
       //if water sensor for "tank low" does not detect water = tank already drained = error
-      if(runningCommandStarted == 0 && levelSensor2State == NO_WATER){
+      if(runningCommandStarted == false && levelSensor2State == NO_WATER){
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("drain failed - tank low = no water");
         #endif
@@ -225,10 +230,9 @@ void processActiveCommand(){
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
-      if(runningCommandStarted == 0){
-        runningCommandStarted = 1;
+      if(runningCommandStarted == false){
+        runningCommandStarted = true;
         
-        resetAllOutputs();
         tankDrainStartTime = millis();
         
         drainOpen();
@@ -238,6 +242,9 @@ void processActiveCommand(){
       }
 
       if (millis() - tankDrainStartTime >= tankDrainTimeout) {
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("draining tank timeout failed");
+        #endif
         finishCommand(COMMAND_FAIL);
         return;
       }
@@ -245,6 +252,9 @@ void processActiveCommand(){
 
       //when water sensor for "tank low" does not detect water = we are done
       if(levelSensor2State == NO_WATER){
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("draining tank success");
+        #endif
         finishCommand(COMMAND_SUCCESS);
       }
       
@@ -253,7 +263,7 @@ void processActiveCommand(){
     case COMMAND_FILL_TANK:
 
       //if "tank high" detects water = error, if "rodi low" detects water = error, if "rodi high" does not detect water = error
-      if(runningCommandStarted == 0 && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+      if(runningCommandStarted == false && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
        #ifdef DEV_ENABLE_SERIAL_DEBUG
         if(levelSensor1State == YES_WATER){
             Serial.println("fill failed - tank full");
@@ -271,9 +281,8 @@ void processActiveCommand(){
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
-      if(runningCommandStarted == 0){
-        runningCommandStarted = 1;
-        resetAllOutputs();
+      if(runningCommandStarted == false){
+        runningCommandStarted = true;
         tankFillStartTime = millis();
         pumpOn();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
@@ -282,38 +291,69 @@ void processActiveCommand(){
       }
 
       if (millis() - tankFillStartTime >= tankFillTimeout) {
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("filling tank timeout failed");
+        #endif
         finishCommand(COMMAND_FAIL);
         return;
       }
       
       //water sensor for "tank high" detects water = command done
       if(levelSensor1State == YES_WATER){
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("filling tank success");
+        #endif
         finishCommand(COMMAND_SUCCESS);
       }
       
       //water sensor for "rodi low" does not detect water = command done
       if(levelSensor4State == NO_WATER){
+        #ifdef DEV_ENABLE_SERIAL_DEBUG
+          Serial.println("filling tank low rodi fail");
+        #endif
         finishCommand(COMMAND_FAIL);
       }
           
-      break;
-      
-    case COMMAND_WATER_CHANGE:
-
-      //wait until rodi is full
-      //wait until water temp matches tank
-      //drain tank
-      //fill tank
-      
       break;
   }
   
 }
 void finishCommand(uint8_t result){
+  
+  //if a command is done - if we are changing the water - proceed to the next command
+  
+  if(result == COMMAND_FAIL){
+    runningWaterChangeCommand = false;
+  }
+  
   resetAllOutputs();
-  lastCommandResult = result;
-  runningCommand = 0;  
-  triggerSerialOutput = true;
+  
+  if(runningWaterChangeCommand == true){
+    switch(runningCommand){
+      case COMMAND_HEAT_AERATE_RODI:
+        runningCommand = COMMAND_DRAIN_TANK;
+        break;
+      case COMMAND_DRAIN_TANK:
+        //filter stays off for next 2 commands in sequence
+        filterOff();
+        runningCommand = COMMAND_FILL_TANK;
+        break;
+      case COMMAND_FILL_TANK:
+      default:
+        runningWaterChangeCommand = false;
+        runningCommand = 0;
+        lastCommandResult = result;
+        triggerSerialOutput = true;
+
+        //must turn filter back on because it's exlcuded from resetAllOutputs when runningWaterChangeCommand = true
+        filterOn();
+        break;
+    }
+  }else{
+    runningCommand = 0;
+    lastCommandResult = result;
+    triggerSerialOutput = true;
+  }
 }
 void handleDrainSolenoidState() {
 
@@ -326,7 +366,7 @@ void handleDrainSolenoidState() {
             Serial.println("solenoid open at 100%");
           #endif
         }else{
-            if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
+            if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
               tankDrainSolenoidValveStateOpenTime = 0;
               tankDrainSolenoidValveStatePwm = 1;
               analogWrite(pinTankDrainSolenoidValve, 77); // open valve 30%
@@ -347,7 +387,7 @@ void handleDrainSolenoidState() {
           #endif
           
         }else{
-          if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateInterval) {
+          if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
             tankDrainSolenoidValveStatePwm = 0;
             tankDrainSolenoidValveStateOpenTime = 0;
             analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
@@ -398,31 +438,42 @@ void handleSerialCommand() {
       filterOff();
       break;
     case COMMAND_HEAT_AERATE_RODI:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_HEAT_AERATE_RODI;
       lastCommandResult = COMMAND_RUNNING;
-      runningCommandStarted = 0;
       break;
     case COMMAND_DRAIN_TANK:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_DRAIN_TANK;
       lastCommandResult = COMMAND_RUNNING;
-      runningCommandStarted = 0;
       break;
     case COMMAND_FILL_TANK:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_FILL_TANK;
       lastCommandResult = COMMAND_RUNNING;
-      runningCommandStarted = 0;
       break;
     case COMMAND_WATER_CHANGE:
-      runningCommand = lastCommand = COMMAND_WATER_CHANGE;
+
+      resetAllOutputs();
+      runningWaterChangeCommand = true;
+      runningCommand = COMMAND_HEAT_AERATE_RODI;
+      lastCommand = COMMAND_WATER_CHANGE;
       lastCommandResult = COMMAND_RUNNING;
-      runningCommandStarted = 0;
       break;
     case COMMAND_IDLE:
-      resetAllOutputs();
       
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
       lastCommand = COMMAND_IDLE;
       runningCommand = COMMAND_IDLE;
       lastCommandResult = COMMAND_SUCCESS;
+      
   
       break;
   }
@@ -433,9 +484,13 @@ void resetAllOutputs(){
   if(tankDrainSolenoidValveState == 1){
     drainClose();
   }
-  filterOn();
+  if(runningWaterChangeCommand == false){
+    filterOn();
+  }
   pumpOff();
   rodiAirHeatOff();
+  
+  runningCommandStarted = false;
 }
 void drainOpen(){
   tankDrainSolenoidValveState = 1;
