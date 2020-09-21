@@ -2,7 +2,7 @@
 #include <DallasTemperature.h>
 
 //comment out for production. disables serial messages output via usb
-#define DEV_ENABLE_SERIAL_DEBUG true
+//#define DEV_ENABLE_SERIAL_DEBUG true
 
 #define ONE_WIRE_BUS 10
 
@@ -99,10 +99,10 @@ byte tankFilterState = 1;
 byte tankFillPumpState = 0;
 byte rodiAirHeatState = 0;
 
-unsigned long lastReadTempsInterval = 1000;
+unsigned long lastReadTempsInterval = 500;
 unsigned long lastReadTempsTime = 0;
 
-unsigned long minOutputStateInterval = 100;
+unsigned long minOutputStateInterval = 50;
 
 unsigned long lastFullOutputStateInterval = 2000;
 unsigned long lastFullOutputStateTime = 0;
