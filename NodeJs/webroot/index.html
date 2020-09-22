@@ -188,7 +188,7 @@ function getStateName(state){
     let name = '';
     forEachControl(function (control) {
         if(control.substr(1) == state){
-            name = titleCase(controls[control].command.replaceAll('_', ' ').toLowerCase());
+            name = titleCase(controls[control].command.replace(/_/g, ' ').toLowerCase());
         }
     });
     return name;
@@ -266,7 +266,6 @@ function connect() {
 }
 
 function updateButtonState(id, state){
-    //console.log('updateButtonState',buttonId,lastState[buttonId],'==',state);
     if(lastState && lastState[id]==state){
         return;
     }
@@ -278,7 +277,6 @@ function updateButtonState(id, state){
 }
 
 function updateTempState(id, state){
-    //console.log('updateTempState',tempId,lastState[tempId],'==',state);
     if(lastState && lastState[id]==state){
         return;
     }
@@ -287,13 +285,12 @@ function updateTempState(id, state){
     el.innerHTML = (Math.round(state * 10) / 10)+' &deg;';
 }
 function updateWaterLevelState(id, state){
-    //console.log('updateTempState',tempId,lastState[tempId],'==',state);
     if(lastState && lastState[id]==state){
         return;
     }
 
     let el = document.querySelector('#waterlevel-'+id+' .state');
-    //el.classList.replace(state==1 ? 'YES' : 'NO', state==1 ? 'NO': 'YES' );
+
     el.innerHTML = state==1 ? '&#x1F4A7;' : '&#x1F573;';
 }
 function updateLastCommand(state){
@@ -314,13 +311,6 @@ function updateState(state){
     updateTempState('t2', state.t2);
     updateTempState('t1', state.t1);
 
-    updateLastCommand(state);
-    
-    // updateButtonState('r1',state.r1);
-    // updateButtonState('r2',state.r2);
-    // updateButtonState('r3',state.r3);
-    // updateButtonState('m1',state.m1);
-
     updateWaterLevelState('w1',state.w1);
     updateWaterLevelState('w2',state.w2);
     updateWaterLevelState('w3',state.w3);
@@ -335,6 +325,8 @@ function updateState(state){
     });
 
     lastState = state;
+
+    updateLastCommand(state);
 }
 
 function forEachControl(fn){
@@ -403,9 +395,6 @@ function initCommandButtons() {
         el.controls = control;
 
         el.addEventListener('click', function (event) {
-            //if(event.target.touchEvent){
-            // 	return;
-            //}
             sendCommand(event.target);
         });
     });
