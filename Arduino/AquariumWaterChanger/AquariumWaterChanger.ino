@@ -328,11 +328,11 @@ void finishCommand(uint8_t result){
   if(runningWaterChangeCommand == true){
     switch(runningCommand){
       case COMMAND_HEAT_AERATE_RODI:
+        filterOff();
         runningCommand = COMMAND_DRAIN_TANK;
         break;
       case COMMAND_DRAIN_TANK:
         //filter stays off for next 2 commands in sequence
-        filterOff();
         runningCommand = COMMAND_FILL_TANK;
         break;
       case COMMAND_FILL_TANK:
