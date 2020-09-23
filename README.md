@@ -1,6 +1,8 @@
 # AquariumWaterChange
 Arduino + Raspberry Pi Zero + NodeJS Aquarium Automatic Water Changer
 
+# Full Details & Write Up Here -> [2xod.com](http://2xod.com/articles/aquarium%20fish%20tank%20arduino%20raspberry%20pi%20water%20change/)
+
 * Control Valve for draining aquarium (permanent siphon, solenoid valve, mosfet)
 * Control Heater & Air Pump (relay)
 * Controls Pump to refill tank (relay)
