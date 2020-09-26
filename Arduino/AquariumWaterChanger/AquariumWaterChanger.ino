@@ -99,7 +99,7 @@ byte tankFilterState = 1;
 byte tankFillPumpState = 0;
 byte rodiAirHeatState = 0;
 
-unsigned long lastReadTempsInterval = 800; //min 750 for 12 bit accuracy
+unsigned long lastReadTempsInterval = 750; //min 750 for 12 bit accuracy
 unsigned long lastReadTempsTime = 0;
 
 unsigned long minOutputStateInterval = 50;
@@ -148,7 +148,8 @@ void setup() {
   digitalWrite(pinRodiAirHeat, HIGH);
 
   findAllTempSensors();
-
+  
+  dallas.setWaitForConversion(false);
   dallas.requestTemperatures();
 }
 // the loop routine runs over and over again forever:
@@ -599,7 +600,6 @@ void readTemps() {
   }
   lastReadTempsTime = millis();
 
-
   //read rodi
   tempProbeRodiReading = dallas.getTempF(tempProbeRodiAddr);
   if(tempProbeRodiReading == DEVICE_DISCONNECTED_F ) 
@@ -631,6 +631,11 @@ void readTemps() {
   
   dallas.requestTemperatures();
   
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print("reading temps ");
+    Serial.print(millis() - lastReadTempsTime);
+    Serial.println("ms elapsed");
+  #endif
 }
 void outputState(){
   unsigned long lastSerial = millis() - lastFullOutputStateTime;
