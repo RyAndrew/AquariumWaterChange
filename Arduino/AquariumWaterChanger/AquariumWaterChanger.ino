@@ -10,7 +10,7 @@ OneWire dallasWire(ONE_WIRE_BUS);
 
 DallasTemperature dallas(&dallasWire);
 
-#define TEMPERATURE_PRECISION 9 // Lower resolution
+#define TEMPERATURE_PRECISION 12 // Highest resolution
 
 //hard coded DS18B20 addresses, not ideal
 uint8_t tempProbeRodiAddr[] ={ 0x28,0xFF,0x3D,0x20,0x71,0x17,0x03,0x74 };
@@ -99,7 +99,7 @@ byte tankFilterState = 1;
 byte tankFillPumpState = 0;
 byte rodiAirHeatState = 0;
 
-unsigned long lastReadTempsInterval = 500;
+unsigned long lastReadTempsInterval = 800; //min 750 for 12 bit accuracy
 unsigned long lastReadTempsTime = 0;
 
 unsigned long minOutputStateInterval = 50;
@@ -148,6 +148,8 @@ void setup() {
   digitalWrite(pinRodiAirHeat, HIGH);
 
   findAllTempSensors();
+
+  dallas.requestTemperatures();
 }
 // the loop routine runs over and over again forever:
 void loop() {
@@ -597,7 +599,6 @@ void readTemps() {
   }
   lastReadTempsTime = millis();
 
-  dallas.requestTemperatures();
 
   //read rodi
   tempProbeRodiReading = dallas.getTempF(tempProbeRodiAddr);
@@ -627,6 +628,8 @@ void readTemps() {
     triggerSerialOutput = true;
   }
   tempProbeTankReadingLast = tempProbeTankReading;
+  
+  dallas.requestTemperatures();
   
 }
 void outputState(){
