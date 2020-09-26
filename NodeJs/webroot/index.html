@@ -282,7 +282,8 @@ function updateTempState(id, state){
     }
 
     let el = document.querySelector('#temp-'+id+' .state');
-    el.innerHTML = (Math.round(state * 10) / 10)+' &deg;';
+    let temp = (Math.round(state * 10) / 10).toFixed(1);
+    el.innerHTML = temp+' &deg;';
 }
 function updateWaterLevelState(id, state){
     if(lastState && lastState[id]==state){
