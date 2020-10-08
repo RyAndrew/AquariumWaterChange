@@ -369,7 +369,7 @@ void handleDrainSolenoidState() {
             if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
               tankDrainSolenoidValveStateOpenTime = 0;
               tankDrainSolenoidValveStatePwm = 1;
-              analogWrite(pinTankDrainSolenoidValve, 77); // open valve 30%
+              analogWrite(pinTankDrainSolenoidValve, 128); // open valve 50%
               #ifdef DEV_ENABLE_SERIAL_DEBUG
                 Serial.println("solenoid open at 30%");
               #endif
