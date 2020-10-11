@@ -61,13 +61,13 @@ uint8_t runningCommandStarted = false;
 uint8_t runningWaterChangeCommand = false;
 
 unsigned long rodiHeatStartTime = 0;
-unsigned long rodiHeatTimeout = 7200000; // 2 * 60 * 60 * 1000 = 2 hours for max heat time
+unsigned long rodiHeatTimeout = 21600000; // 6 * 60 * 60 * 1000 = 6 hours for max heat time
 
 unsigned long tankDrainStartTime = 0;
-unsigned long tankDrainTimeout = 600000; // 10 * 60 * 1000 = 10 minutes for max drain time
+unsigned long tankDrainTimeout = 900000; // 15 * 60 * 1000 = 15 minutes for max drain time
 
 unsigned long tankFillStartTime = 0;
-unsigned long tankFillTimeout = 300000; // 5 * 60 * 1000 = 5 minutes for max fill time
+unsigned long tankFillTimeout = 600000; // 10 * 60 * 1000 = 10 minutes for max fill time
 
 char serialCommand = 0;
 
@@ -108,7 +108,7 @@ unsigned long lastFullOutputStateInterval = 2000;
 unsigned long lastFullOutputStateTime = 0;
 
 //digital pin
-int pinTankDrainSolenoidValveBkp = 21;
+int pinTankDrainSolenoidValveBkp = 21; //drain valve backup pin is always digital 0 or 1 in case PWM fails
 int pinTankDrainSolenoidValve = 6;
 byte tankDrainSolenoidValveState = 0;
 unsigned long tankDrainSolenoidValveStateDelay = 1000;
@@ -226,7 +226,7 @@ void processActiveCommand(){
         #endif
         
         finishCommand(COMMAND_FAIL);
-        return;  
+        return;
       }
       
       //start timer if it hasn't, also useful for first time command has started, reset everything just in case
@@ -377,7 +377,7 @@ void handleDrainSolenoidState() {
         }
       }
   }else{
-    //if we just closed the valve, then give solenoid full voltage for 250ms to "hammer" it shut
+    //if we just closed the valve, then give solenoid full voltage to "slam" it shut
       if(tankDrainSolenoidValveStatePwm == 1){
         if(tankDrainSolenoidValveStateOpenTime == 0){
           tankDrainSolenoidValveStateOpenTime = millis();
@@ -473,8 +473,6 @@ void handleSerialCommand() {
       lastCommand = COMMAND_IDLE;
       runningCommand = COMMAND_IDLE;
       lastCommandResult = COMMAND_SUCCESS;
-      
-  
       break;
   }
   serialCommand = 0;
