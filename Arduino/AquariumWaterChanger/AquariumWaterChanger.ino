@@ -304,6 +304,7 @@ void processActiveCommand(){
           Serial.println("filling tank success");
         #endif
         finishCommand(COMMAND_SUCCESS);
+        return;
       }
       
       //water sensor for "rodi low" does not detect water = command done
