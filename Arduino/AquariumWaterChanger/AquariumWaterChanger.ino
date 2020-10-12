@@ -318,28 +318,28 @@ void handleSerialCommand() {
       break;
     case COMMAND_HEAT_AERATE_RODI:
     
-      resetAllOutputs();
+      resetCommandOutputs();
       runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_HEAT_AERATE_RODI;
       lastCommandResult = COMMAND_RUNNING;
       break;
     case COMMAND_DRAIN_TANK:
     
-      resetAllOutputs();
+      resetCommandOutputs();
       runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_DRAIN_TANK;
       lastCommandResult = COMMAND_RUNNING;
       break;
     case COMMAND_FILL_TANK:
     
-      resetAllOutputs();
+      resetCommandOutputs();
       runningWaterChangeCommand = false;
       runningCommand = lastCommand = COMMAND_FILL_TANK;
       lastCommandResult = COMMAND_RUNNING;
       break;
     case COMMAND_WATER_CHANGE:
 
-      resetAllOutputs();
+      resetCommandOutputs();
       runningWaterChangeCommand = true;
       runningCommand = COMMAND_HEAT_AERATE_RODI;
       lastCommand = COMMAND_WATER_CHANGE;
@@ -347,7 +347,7 @@ void handleSerialCommand() {
       break;
     case COMMAND_IDLE:
       
-      resetAllOutputs();
+      resetCommandOutputs();
       runningWaterChangeCommand = false;
       lastCommand = COMMAND_IDLE;
       runningCommand = COMMAND_IDLE;
@@ -516,7 +516,7 @@ void finishCommand(uint8_t result){
     runningWaterChangeCommand = false;
   }
   
-  resetAllOutputs();
+  resetCommandOutputs();
   
   if(runningWaterChangeCommand == true){
     switch(runningCommand){
@@ -535,7 +535,7 @@ void finishCommand(uint8_t result){
         lastCommandResult = result;
         triggerSerialOutput = true;
 
-        //must turn filter back on because it's exlcuded from resetAllOutputs when runningWaterChangeCommand = true
+        //must turn filter back on because it's exlcuded from resetCommandOutputs when runningWaterChangeCommand = true
         filterOn();
         break;
     }
@@ -546,7 +546,7 @@ void finishCommand(uint8_t result){
   }
 }
 
-void resetAllOutputs(){
+void resetCommandOutputs(){
   if(tankDrainSolenoidValveState == 1){
     drainClose();
   }
