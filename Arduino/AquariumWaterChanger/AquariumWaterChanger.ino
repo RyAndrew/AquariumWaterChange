@@ -349,8 +349,7 @@ void handleSerialCommand() {
       
       resetCommandOutputs();
       runningWaterChangeCommand = false;
-      lastCommand = COMMAND_IDLE;
-      runningCommand = COMMAND_IDLE;
+      runningCommand = lastCommand = COMMAND_IDLE;
       lastCommandResult = COMMAND_SUCCESS;
       break;
   }
@@ -529,10 +528,21 @@ void finishCommand(uint8_t result){
         runningCommand = COMMAND_FILL_TANK;
         break;
       case COMMAND_FILL_TANK:
-      default:
         runningWaterChangeCommand = false;
         runningCommand = 0;
         lastCommandResult = result;
+        triggerSerialOutput = true;
+
+        //must turn filter back on because it's exlcuded from resetCommandOutputs when runningWaterChangeCommand = true
+        filterOn();
+        break;
+        
+      default:
+        //should never happen - unknown state transition
+        
+        runningWaterChangeCommand = false;
+        runningCommand = 0;
+        lastCommandResult = COMMAND_FAIL;
         triggerSerialOutput = true;
 
         //must turn filter back on because it's exlcuded from resetCommandOutputs when runningWaterChangeCommand = true
