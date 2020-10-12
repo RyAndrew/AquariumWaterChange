@@ -168,6 +168,195 @@ void loop() {
   outputState();
 
 }
+void readTemps() {
+
+  if (millis() - lastReadTempsTime < lastReadTempsInterval) {
+    return;
+  }
+  lastReadTempsTime = millis();
+
+  //read rodi
+  tempProbeRodiReading = dallas.getTempF(tempProbeRodiAddr);
+  if(tempProbeRodiReading == DEVICE_DISCONNECTED_F ) 
+  {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.println("Error reading temp from Rodi");
+    #endif
+    tempProbeRodiReading = 0;
+  }
+  if(tempProbeRodiReadingLast != tempProbeRodiReading){
+    triggerSerialOutput = true;
+  }
+  tempProbeRodiReadingLast = tempProbeRodiReading;
+
+
+  //read tank
+  tempProbeTankReading = dallas.getTempF(tempProbeTankAddr);
+  if(tempProbeTankReading == DEVICE_DISCONNECTED_F ) 
+  {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.println("Error reading temp from Tank");
+    #endif
+    tempProbeTankReading = 0;
+  }
+  if(tempProbeTankReadingLast != tempProbeTankReading){
+    triggerSerialOutput = true;
+  }
+  tempProbeTankReadingLast = tempProbeTankReading;
+  
+  dallas.requestTemperatures();
+  
+  #ifdef DEV_ENABLE_SERIAL_DEBUG
+    Serial.print("reading temps ");
+    Serial.print(millis() - lastReadTempsTime);
+    Serial.println("ms elapsed");
+  #endif
+}
+
+void readLevelSensors() {
+
+  levelSensor1State = digitalRead(levelSensor1);
+  if(levelSensor1State != levelSensor1StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor1StateLast = levelSensor1State;
+  
+  levelSensor2State = digitalRead(levelSensor2);
+  if(levelSensor2State != levelSensor2StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor2StateLast = levelSensor2State;
+  
+  levelSensor3State = digitalRead(levelSensor3);
+  if(levelSensor3State != levelSensor3StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor3StateLast = levelSensor3State;
+  
+  levelSensor4State = digitalRead(levelSensor4);
+  if(levelSensor4State != levelSensor4StateLast){
+    triggerSerialOutput = true;
+  }
+  levelSensor4StateLast = levelSensor4State;
+
+}
+
+void readSerialCommand(){
+
+  if (Serial1.available() > 0){
+    String cmdRecieved;
+    int cmdRecievedLen;
+
+    cmdRecieved = Serial1.readStringUntil("\r\n");
+    //    Serial.print("cmdRecieved ");
+    //    Serial.println(cmdRecieved);
+
+    cmdRecievedLen = cmdRecieved.length();
+
+    //    Serial.print("cmdRecieved length ");
+    //    Serial.println(cmdRecievedLen);
+
+    //    Serial.print("cmdRecieved DEC ");
+    //    for(int i = 0; i < cmdRecievedLen; i++){
+    //      Serial.print(cmdRecieved.charAt(i),DEC);
+    //      Serial.print(" ");
+    //    }
+    //    Serial.println();
+
+
+    if (cmdRecieved.length() == 2) {
+      serialCommand = cmdRecieved.charAt(0);
+    }
+  }
+
+  if (serialCommand != 0 && serialCommand > 96 && serialCommand < 123 ) {
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("Recieved Command ");
+      Serial.println(serialCommand);
+    #endif
+    handleSerialCommand();
+    triggerSerialOutput = true;
+  }
+
+}
+
+void handleSerialCommand() {
+
+  switch (serialCommand) {
+    case COMMAND_PING:
+      #ifdef DEV_ENABLE_SERIAL_DEBUG
+        Serial.println("pong");
+      #endif
+      Serial1.println("pong");
+      break;
+    case COMMAND_RESCAN_TEMP_PROBES:
+      findAllTempSensors();
+      break;
+    case COMMAND_DRAIN_TANK_VALVE_OPEN:
+      drainOpen();
+      break;
+    case COMMAND_DRAIN_TANK_VALVE_CLOSE:
+      drainClose();
+      break;
+    case COMMAND_FILL_TANK_PUMP_ON:
+      pumpOn();
+      break;
+    case COMMAND_FILL_TANK_PUMP_OFF:
+      pumpOff();
+      break;
+    case COMMAND_RODI_AIR_HEAT_ON:
+      rodiAirHeatOn();
+      break;
+    case COMMAND_RODI_AIR_HEAT_OFF:
+      rodiAirHeatOff();
+      break;
+    case COMMAND_TANK_FILTER_ON:
+      filterOn();
+      break;
+    case COMMAND_TANK_FILTER_OFF:
+      filterOff();
+      break;
+    case COMMAND_HEAT_AERATE_RODI:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
+      runningCommand = lastCommand = COMMAND_HEAT_AERATE_RODI;
+      lastCommandResult = COMMAND_RUNNING;
+      break;
+    case COMMAND_DRAIN_TANK:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
+      runningCommand = lastCommand = COMMAND_DRAIN_TANK;
+      lastCommandResult = COMMAND_RUNNING;
+      break;
+    case COMMAND_FILL_TANK:
+    
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
+      runningCommand = lastCommand = COMMAND_FILL_TANK;
+      lastCommandResult = COMMAND_RUNNING;
+      break;
+    case COMMAND_WATER_CHANGE:
+
+      resetAllOutputs();
+      runningWaterChangeCommand = true;
+      runningCommand = COMMAND_HEAT_AERATE_RODI;
+      lastCommand = COMMAND_WATER_CHANGE;
+      lastCommandResult = COMMAND_RUNNING;
+      break;
+    case COMMAND_IDLE:
+      
+      resetAllOutputs();
+      runningWaterChangeCommand = false;
+      lastCommand = COMMAND_IDLE;
+      runningCommand = COMMAND_IDLE;
+      lastCommandResult = COMMAND_SUCCESS;
+      break;
+  }
+  serialCommand = 0;
+
+}
 void processActiveCommand(){
   switch(runningCommand){
     //case COMMAND_IDLE:
@@ -356,129 +545,7 @@ void finishCommand(uint8_t result){
     triggerSerialOutput = true;
   }
 }
-void handleDrainSolenoidState() {
 
-  if(tankDrainSolenoidValveState == 1){
-      if(tankDrainSolenoidValveStatePwm == 0){
-        if(tankDrainSolenoidValveStateOpenTime == 0){
-          tankDrainSolenoidValveStateOpenTime = millis();
-          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
-          #ifdef DEV_ENABLE_SERIAL_DEBUG
-            Serial.println("solenoid open at 100%");
-          #endif
-        }else{
-            if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
-              tankDrainSolenoidValveStateOpenTime = 0;
-              tankDrainSolenoidValveStatePwm = 1;
-              analogWrite(pinTankDrainSolenoidValve, 128); // open valve 50%
-              #ifdef DEV_ENABLE_SERIAL_DEBUG
-                Serial.println("solenoid open at 30%");
-              #endif
-            }
-        }
-      }
-  }else{
-    //if we just closed the valve, then give solenoid full voltage to "slam" it shut
-      if(tankDrainSolenoidValveStatePwm == 1){
-        if(tankDrainSolenoidValveStateOpenTime == 0){
-          tankDrainSolenoidValveStateOpenTime = millis();
-          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
-          #ifdef DEV_ENABLE_SERIAL_DEBUG
-            Serial.println("solenoid closing at 100%");
-          #endif
-          
-        }else{
-          if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
-            tankDrainSolenoidValveStatePwm = 0;
-            tankDrainSolenoidValveStateOpenTime = 0;
-            analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
-            #ifdef DEV_ENABLE_SERIAL_DEBUG
-              Serial.println("solenoid closing at 0%");
-            #endif
-            
-          }
-        }
-      }
-  }
-}
-
-void handleSerialCommand() {
-
-  switch (serialCommand) {
-    case COMMAND_PING:
-      #ifdef DEV_ENABLE_SERIAL_DEBUG
-        Serial.println("pong");
-      #endif
-      Serial1.println("pong");
-      break;
-    case COMMAND_RESCAN_TEMP_PROBES:
-      findAllTempSensors();
-      break;
-    case COMMAND_DRAIN_TANK_VALVE_OPEN:
-      drainOpen();
-      break;
-    case COMMAND_DRAIN_TANK_VALVE_CLOSE:
-      drainClose();
-      break;
-    case COMMAND_FILL_TANK_PUMP_ON:
-      pumpOn();
-      break;
-    case COMMAND_FILL_TANK_PUMP_OFF:
-      pumpOff();
-      break;
-    case COMMAND_RODI_AIR_HEAT_ON:
-      rodiAirHeatOn();
-      break;
-    case COMMAND_RODI_AIR_HEAT_OFF:
-      rodiAirHeatOff();
-      break;
-    case COMMAND_TANK_FILTER_ON:
-      filterOn();
-      break;
-    case COMMAND_TANK_FILTER_OFF:
-      filterOff();
-      break;
-    case COMMAND_HEAT_AERATE_RODI:
-    
-      resetAllOutputs();
-      runningWaterChangeCommand = false;
-      runningCommand = lastCommand = COMMAND_HEAT_AERATE_RODI;
-      lastCommandResult = COMMAND_RUNNING;
-      break;
-    case COMMAND_DRAIN_TANK:
-    
-      resetAllOutputs();
-      runningWaterChangeCommand = false;
-      runningCommand = lastCommand = COMMAND_DRAIN_TANK;
-      lastCommandResult = COMMAND_RUNNING;
-      break;
-    case COMMAND_FILL_TANK:
-    
-      resetAllOutputs();
-      runningWaterChangeCommand = false;
-      runningCommand = lastCommand = COMMAND_FILL_TANK;
-      lastCommandResult = COMMAND_RUNNING;
-      break;
-    case COMMAND_WATER_CHANGE:
-
-      resetAllOutputs();
-      runningWaterChangeCommand = true;
-      runningCommand = COMMAND_HEAT_AERATE_RODI;
-      lastCommand = COMMAND_WATER_CHANGE;
-      lastCommandResult = COMMAND_RUNNING;
-      break;
-    case COMMAND_IDLE:
-      
-      resetAllOutputs();
-      runningWaterChangeCommand = false;
-      lastCommand = COMMAND_IDLE;
-      runningCommand = COMMAND_IDLE;
-      lastCommandResult = COMMAND_SUCCESS;
-      break;
-  }
-  serialCommand = 0;
-
-}
 void resetAllOutputs(){
   if(tankDrainSolenoidValveState == 1){
     drainClose();
@@ -528,34 +595,6 @@ void pumpOff(){
   tankFillPumpState = 0;
   digitalWrite(pinTankFillPump, HIGH);
 }
-void readLevelSensors() {
-
-  levelSensor1State = digitalRead(levelSensor1);
-  if(levelSensor1State != levelSensor1StateLast){
-    triggerSerialOutput = true;
-  }
-  levelSensor1StateLast = levelSensor1State;
-  
-  levelSensor2State = digitalRead(levelSensor2);
-  if(levelSensor2State != levelSensor2StateLast){
-    triggerSerialOutput = true;
-  }
-  levelSensor2StateLast = levelSensor2State;
-  
-  levelSensor3State = digitalRead(levelSensor3);
-  if(levelSensor3State != levelSensor3StateLast){
-    triggerSerialOutput = true;
-  }
-  levelSensor3StateLast = levelSensor3State;
-  
-  levelSensor4State = digitalRead(levelSensor4);
-  if(levelSensor4State != levelSensor4StateLast){
-    triggerSerialOutput = true;
-  }
-  levelSensor4StateLast = levelSensor4State;
-
-}
-
 void findAllTempSensors() {
 
   dallas.begin();
@@ -592,49 +631,50 @@ void findAllTempSensors() {
   Serial.println(tempSensorCount);
 */
 }
-void readTemps() {
+void handleDrainSolenoidState() {
 
-  if (millis() - lastReadTempsTime < lastReadTempsInterval) {
-    return;
+  if(tankDrainSolenoidValveState == 1){
+      if(tankDrainSolenoidValveStatePwm == 0){
+        if(tankDrainSolenoidValveStateOpenTime == 0){
+          tankDrainSolenoidValveStateOpenTime = millis();
+          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
+          #ifdef DEV_ENABLE_SERIAL_DEBUG
+            Serial.println("solenoid open at 100%");
+          #endif
+        }else{
+            if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
+              tankDrainSolenoidValveStateOpenTime = 0;
+              tankDrainSolenoidValveStatePwm = 1;
+              analogWrite(pinTankDrainSolenoidValve, 128); // open valve 50%
+              #ifdef DEV_ENABLE_SERIAL_DEBUG
+                Serial.println("solenoid open at 30%");
+              #endif
+            }
+        }
+      }
+  }else{
+    //if we just closed the valve, then give solenoid full voltage to "slam" it shut
+      if(tankDrainSolenoidValveStatePwm == 1){
+        if(tankDrainSolenoidValveStateOpenTime == 0){
+          tankDrainSolenoidValveStateOpenTime = millis();
+          analogWrite(pinTankDrainSolenoidValve, 255); // open valve 100%
+          #ifdef DEV_ENABLE_SERIAL_DEBUG
+            Serial.println("solenoid closing at 100%");
+          #endif
+          
+        }else{
+          if (millis() - tankDrainSolenoidValveStateOpenTime >= tankDrainSolenoidValveStateDelay) {
+            tankDrainSolenoidValveStatePwm = 0;
+            tankDrainSolenoidValveStateOpenTime = 0;
+            analogWrite(pinTankDrainSolenoidValve, 0); // open valve 0%
+            #ifdef DEV_ENABLE_SERIAL_DEBUG
+              Serial.println("solenoid closing at 0%");
+            #endif
+            
+          }
+        }
+      }
   }
-  lastReadTempsTime = millis();
-
-  //read rodi
-  tempProbeRodiReading = dallas.getTempF(tempProbeRodiAddr);
-  if(tempProbeRodiReading == DEVICE_DISCONNECTED_F ) 
-  {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.println("Error reading temp from Rodi");
-    #endif
-    tempProbeRodiReading = 0;
-  }
-  if(tempProbeRodiReadingLast != tempProbeRodiReading){
-    triggerSerialOutput = true;
-  }
-  tempProbeRodiReadingLast = tempProbeRodiReading;
-
-
-  //read tank
-  tempProbeTankReading = dallas.getTempF(tempProbeTankAddr);
-  if(tempProbeTankReading == DEVICE_DISCONNECTED_F ) 
-  {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.println("Error reading temp from Tank");
-    #endif
-    tempProbeTankReading = 0;
-  }
-  if(tempProbeTankReadingLast != tempProbeTankReading){
-    triggerSerialOutput = true;
-  }
-  tempProbeTankReadingLast = tempProbeTankReading;
-  
-  dallas.requestTemperatures();
-  
-  #ifdef DEV_ENABLE_SERIAL_DEBUG
-    Serial.print("reading temps ");
-    Serial.print(millis() - lastReadTempsTime);
-    Serial.println("ms elapsed");
-  #endif
 }
 void outputState(){
   unsigned long lastSerial = millis() - lastFullOutputStateTime;
@@ -718,43 +758,5 @@ void outputState(){
     Serial.println();
   #endif
   Serial1.println();
-
-}
-void readSerialCommand(){
-
-  if (Serial1.available() > 0){
-    String cmdRecieved;
-    int cmdRecievedLen;
-
-    cmdRecieved = Serial1.readStringUntil("\r\n");
-    //    Serial.print("cmdRecieved ");
-    //    Serial.println(cmdRecieved);
-
-    cmdRecievedLen = cmdRecieved.length();
-
-    //    Serial.print("cmdRecieved length ");
-    //    Serial.println(cmdRecievedLen);
-
-    //    Serial.print("cmdRecieved DEC ");
-    //    for(int i = 0; i < cmdRecievedLen; i++){
-    //      Serial.print(cmdRecieved.charAt(i),DEC);
-    //      Serial.print(" ");
-    //    }
-    //    Serial.println();
-
-
-    if (cmdRecieved.length() == 2) {
-      serialCommand = cmdRecieved.charAt(0);
-    }
-  }
-
-  if (serialCommand != 0 && serialCommand > 96 && serialCommand < 123 ) {
-    #ifdef DEV_ENABLE_SERIAL_DEBUG
-      Serial.print("Recieved Command ");
-      Serial.println(serialCommand);
-    #endif
-    handleSerialCommand();
-    triggerSerialOutput = true;
-  }
 
 }
