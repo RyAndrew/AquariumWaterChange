@@ -450,8 +450,8 @@ void processActiveCommand(){
       
     case COMMAND_FILL_TANK:
 
-      //if "tank high" detects water = error, if "rodi low" detects water = error, if "rodi high" does not detect water = error
-      if(runningCommandStarted == false && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER || levelSensor4State == NO_WATER)){
+      //if "tank high" detects water = error, if "rodi low" detects water = error
+      if(runningCommandStarted == false && (levelSensor1State == YES_WATER || levelSensor3State == NO_WATER )){
        #ifdef DEV_ENABLE_SERIAL_DEBUG
         if(levelSensor1State == YES_WATER){
             Serial.println("fill failed - tank full");
