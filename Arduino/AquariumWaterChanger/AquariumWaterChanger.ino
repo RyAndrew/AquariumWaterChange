@@ -22,6 +22,8 @@ float tempProbeRodiReadingLast = 0;
 float tempProbeTankReading = 0;
 float tempProbeTankReadingLast = 0;
 
+float tankRodiDelta = 0;
+
 #define COMMAND_PING 'a'
 
 #define COMMAND_DRAIN_TANK_VALVE_OPEN 'd'
@@ -61,7 +63,7 @@ uint8_t runningCommandStarted = false;
 uint8_t runningWaterChangeCommand = false;
 
 unsigned long rodiHeatStartTime = 0;
-unsigned long rodiHeatTimeout = 21600000; // 6 * 60 * 60 * 1000 = 6 hours for max heat time
+unsigned long rodiHeatTimeout = 28800000; // 8 * 60 * 60 * 1000 = 8 hours for max heat time
 
 unsigned long tankDrainStartTime = 0;
 unsigned long tankDrainTimeout = 900000; // 15 * 60 * 1000 = 15 minutes for max drain time
@@ -276,6 +278,12 @@ void readSerialCommand(){
     #endif
     handleSerialCommand();
     triggerSerialOutput = true;
+  }else{
+    #ifdef DEV_ENABLE_SERIAL_DEBUG
+      Serial.print("Invalid Command Recieved ");
+      Serial.println(serialCommand);
+    #endif
+    serialCommand = 0;
   }
 
 }
@@ -398,7 +406,9 @@ void processActiveCommand(){
       }
       
       //when rodi temp sensor matches tank temp sensor = we are done
-      if(tempProbeRodiReading >= tempProbeTankReading){
+      tankRodiDelta = tempProbeRodiReading - tempProbeTankReading;
+      tankRodiDelta = abs(tankRodiDelta);
+      if( tankRodiDelta <= 1.5 ){
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("rodi heat air success");
         #endif
@@ -422,7 +432,7 @@ void processActiveCommand(){
         runningCommandStarted = true;
         
         tankDrainStartTime = millis();
-        
+        filterOff();
         drainOpen();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("draining tank");
@@ -472,6 +482,7 @@ void processActiveCommand(){
       if(runningCommandStarted == false){
         runningCommandStarted = true;
         tankFillStartTime = millis();
+        filterOff();
         pumpOn();
         #ifdef DEV_ENABLE_SERIAL_DEBUG
           Serial.println("filling tank");
